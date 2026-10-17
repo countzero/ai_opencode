@@ -11,6 +11,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | `plugins/llama-limits.js`       | Fills llama-server providers from their presets     | any     |
 | `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
+| `scripts/migrate.ps1`           | Moves a machine from OpenCode 1.x to 2.0            | Windows |
 | `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
 | `.opencode/skills/plan-review/` | Second-pass design review of a plan                 | any     |
 | `.opencode/skills/trim-prose/`  | Tightens the comments and docs a branch changes     | bash    |
