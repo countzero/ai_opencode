@@ -20,7 +20,8 @@
         "prune": true
     },
 
-    "plugin": ["opencode-claude-auth"],
+    // TODO: Update to OpenCode 2
+    "plugin": ["opencode-claude-auth@2.2.1"],
 
     "permission": {
         "external_directory": {
