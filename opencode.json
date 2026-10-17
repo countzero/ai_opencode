@@ -75,13 +75,34 @@
             }
         },
 
-        "blender": {
-            "enabled": false,
+        // Chrome on an Android device over adb forward tcp:9222 localabstract:chrome_devtools_remote;
+        // connects on first use, so it idles harmlessly while no device is forwarded.
+        "chrome-android": {
+            "enabled": true,
             "type": "local",
             "command": [
-                "C:\\Miniconda\\envs\\blender-mcp\\python.exe",
-                "-m", "blmcp"
-            ]
+                "C:/Program Files/nodejs/npx.cmd",
+                "-y",
+                "chrome-devtools-mcp@latest",
+                "--browser-url=http://127.0.0.1:9222",
+                "--no-usage-statistics"
+            ],
+            "timeout": 15000,
+            "environment": {
+                "Path": "C:\\Program Files\\nodejs;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem"
+            }
+        },
+
+        "blender": {
+            // Starts without Blender; tools reach it once the add-on's server runs (N-panel).
+            "enabled": true,
+            "type": "local",
+            // mcp-for-blender 2.1.3 in the conda env "blender-mcp". To upgrade, run
+            // pip install mcp-for-blender==<version> there, then rerun install-addon.
+            "command": ["C:\\Miniconda\\envs\\blender-mcp\\Scripts\\mcp-for-blender.exe"],
+            "environment": {
+                "DISABLE_TELEMETRY": "true"
+            }
         }
     },
 
