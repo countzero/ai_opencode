@@ -117,14 +117,28 @@ function Assert-Preflight {
         throw 'This shell runs inside OpenCode. Close every OpenCode window and run the script from a new pwsh window.'
     }
 
-    $running = @(Get-Process -Name 'opencode*' -ErrorAction Ignore)
-
-    if ($running) {
-        throw "OpenCode is still running (PID $($running.Id -join ', ')). Close every OpenCode window first."
-    }
-
     if (-not (Test-Path $npm)) {
         throw "npm not found at $npm; pass -NodeDir."
+    }
+
+    $processes = @(Get-CimInstance Win32_Process -Filter "Name LIKE 'opencode%'")
+    $windows = @($processes | Where-Object { $_.CommandLine -notmatch '\bserve\b' })
+
+    if ($windows) {
+        throw "OpenCode is still running (PID $($windows.ProcessId -join ', ')). Close every OpenCode window first."
+    }
+
+    # The shared 2.0 service outlives its windows and holds opencode.exe, which npm replaces.
+    $servers = @($processes | Where-Object { $_.CommandLine -match '\bserve\b' })
+
+    if ($servers) {
+        if (Test-Path $opencode) {
+            & $opencode service stop 2>$null | Out-Null
+            Start-Sleep -Seconds 2
+        }
+
+        Get-Process -Id $servers.ProcessId -ErrorAction Ignore | Stop-Process -Force
+        Info "Stopped the OpenCode service (PID $($servers.ProcessId -join ', '))."
     }
 
     if (git -C $config status --porcelain) {
@@ -210,14 +224,18 @@ function Invoke-Migration {
         Invoke-Checked $npm (@('-g', 'uninstall') + $stale)
     }
 
-    Invoke-Checked $npm @('-g', 'install', '--no-fund', '--no-audit', '@opencode/cli@2')
+    if ((Get-GlobalPackages) -notcontains '@opencode/cli') {
+        Invoke-Checked $npm @('-g', 'install', '--no-fund', '--no-audit', '@opencode/cli@2')
+    }
+
+    # Prints "opencode v2.0.32".
     $version = "$(& $opencode --version)".Trim()
 
-    if ($version -notmatch '^2\.') {
+    if ($version -notmatch '\bv?2\.\d') {
         throw "opencode --version reports '$version', expected 2.x."
     }
 
-    Info "OpenCode $version."
+    Info "Installed: $version."
 
     Step 'OpenCode: disable the shared service, install the plugins'
 
@@ -294,6 +312,10 @@ function Invoke-Rollback {
     Invoke-Checked git @('-C', $config, 'checkout', '--quiet', $LegacyBranch)
 }
 
+$npmPrefix = if (Test-Path $npm) { "$(& $npm prefix -g)".Trim() } else { Join-Path $env:APPDATA 'npm' }
+$opencode = Join-Path $npmPrefix 'opencode.cmd'
+$env:Path = "$NodeDir;$npmPrefix;$env:Path"
+
 try {
     Assert-Preflight
 } catch {
@@ -301,10 +323,6 @@ try {
 
     exit 1
 }
-
-$npmPrefix = "$(& $npm prefix -g)".Trim()
-$opencode = Join-Path $npmPrefix 'opencode.cmd'
-$env:Path = "$NodeDir;$npmPrefix;$env:Path"
 
 $action = if ($Rollback) { 'roll this machine back to OpenCode 1.x' } else { 'migrate this machine to OpenCode 2.0' }
 
