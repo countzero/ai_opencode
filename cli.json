@@ -1,5 +1,8 @@
 {
   "$schema": "https://opencode.ai/v2/cli.json",
   "theme": { "name": "material" },
-  "plugins": ["./tui-plugins/slot-title"]
+  "plugins": ["./tui-plugins/slot-title"],
+  "keybinds": {
+    "agent.cycle": "tab,shift+tab"
+  }
 }
