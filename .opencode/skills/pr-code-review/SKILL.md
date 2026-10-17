@@ -77,7 +77,7 @@ no severity; they are observations for the author.
 
 ## Workflow and User Communication
 
-Track these steps with the todo tool:
+State these steps up front and report each as it finishes:
 
 1. Resolve scope, base and context
 2. Design review

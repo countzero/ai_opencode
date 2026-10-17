@@ -5,14 +5,18 @@
 !.gitattributes
 !LICENSE
 !README.md
+!MIGRATION.md
 !opencode.json
-!tui.json
+!cli.json
 !opencode_config.sublime-project
 
 !plugins/
 !plugins/*.js
 !tui-plugins/
-!tui-plugins/*.js
+!tui-plugins/*/
+!tui-plugins/*/*.js
+!scripts/
+!scripts/*.ps1
 
 !.opencode/
 !.opencode/AGENTS.md

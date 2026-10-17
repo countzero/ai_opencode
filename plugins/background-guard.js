@@ -1,15 +1,14 @@
-// Guards OpenCode's experimental background subagents (the task tool's background=true).
+// Guards OpenCode's background subagents (the subagent tool's background=true).
 // They run unwatched: a looping one burns tokens until someone notices
-// (https://github.com/anomalyco/opencode/issues/45442), and v1 stops them only all at once,
-// with Esc on the parent. This refuses background tasks for any agent but explore, caps the
-// running ones per parent session, and adds usage rules to the task tool's description.
-//
-// Inert unless OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS is on. OpenCode reads that flag
-// at startup, before any plugin runs, so a plugin cannot turn it on itself.
+// (https://github.com/anomalyco/opencode/issues/45442). This refuses background tasks for
+// any agent but explore, caps the running ones per parent session, and adds usage rules to
+// the subagent tool's description.
 //
 // Install: drop this file into a plugins/ directory under an OpenCode config root and
 // restart. ~/.config/opencode/plugins/ makes it global, a checkout's .opencode/plugins/
 // scopes it to that project.
+
+const tool = 'subagent';
 
 // Per parent session, not per process: switching sessions in the TUI leaves the jobs of the
 // one left behind running, so two busy sessions can hold twice this many.
@@ -19,117 +18,129 @@ const allowedAgents = new Set([
     'explore',
 ]);
 
-// A call whose tool.execute.after never fires (its execute threw) would hold a slot forever.
+// A call whose execute.after never fires would hold a slot forever.
 const pendingTtlMs = 60_000;
 
-// Plugin events are filtered by directory, so a session moved into a worktree never reports
-// its children idle, and a child can go idle before its receipt is recorded. Either way the
-// slot would never free.
+// A child whose end event is missed (subscription dropped) would hold its slot forever.
 const runningTtlMs = 60 * 60_000;
 
 const rules = [
     'Background guard (local plugin):',
-    '- background=true only with subagent_type explore, for read-only research. Never for edits or the browser: this process has one Chrome profile, and parallel browser work collides on it.',
+    '- background=true only with agent explore, for read-only research. Never for edits or the browser: this window has one Chrome profile, and parallel browser work collides on it.',
     '- Start background tasks only when the user asked for them or approved your proposal.',
-    '- When launching, tell the user in one line what started, and track each task as a todo item.',
+    '- When launching, tell the user in one line what started, and list each task in your reply.',
     '- A result that arrives while others you launched together still run gets a one-line acknowledgment at most. After the last one, give one combined report: the result, then the single next step.',
 ].join('\n');
 
-// Mirrors OpenCode's own reading of the flag (Effect's Config.boolean, case-sensitive): the
-// specific variable wins, else the umbrella OPENCODE_EXPERIMENTAL.
-const truthy = value => [
-    'true',
-    'yes',
-    'on',
-    '1',
-    'y',
-].includes(value);
+const ended = new Set([
+    'session.execution.succeeded',
+    'session.execution.failed',
+    'session.execution.interrupted',
+]);
 
-const enabled = () => {
-    const own = process.env.OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS;
+const isObject = value => typeof value === 'object' && value !== null;
 
-    return own === undefined ? truthy(process.env.OPENCODE_EXPERIMENTAL) : truthy(own);
-};
+export default {
+    id: 'local.background-guard',
 
-export const BackgroundGuard = async () => {
-    if (!enabled()) {
-        return {};
-    }
+    setup: async ctx => {
+        // Slot key to { parent, until }. Keyed by the call ID while the call is let through but
+        // its result not yet seen, so several background calls in one message cannot all pass
+        // the same check; then by the child's session ID, which the result names.
+        const slots = new Map();
 
-    // Slot key to { parent, until }. Keyed by the call ID while the call is let through but
-    // its receipt not yet seen, so several background calls in one message cannot all pass
-    // the same check; then by the child's session ID, which the receipt names.
-    const slots = new Map();
+        const occupied = parent => {
+            const now = Date.now();
+            let count = 0;
 
-    const occupied = parent => {
-        const now = Date.now();
-        let count = 0;
-
-        for (const [key, slot] of slots) {
-            if (slot.until < now) {
-                slots.delete(key);
-            } else if (slot.parent === parent) {
-                count += 1;
-            }
-        }
-
-        return count;
-    };
-
-    return {
-        'tool.definition': async (input, output) => {
-            if (input.toolID === 'task') {
-                output.description = `${output.description}\n\n${rules}`;
-            }
-        },
-
-        'tool.execute.before': async (input, output) => {
-            if (input.tool !== 'task' || output.args?.background !== true) {
-                return;
+            for (const [key, slot] of slots) {
+                if (slot.until < now) {
+                    slots.delete(key);
+                } else if (slot.parent === parent) {
+                    count += 1;
+                }
             }
 
-            const agent = output.args.subagent_type;
+            return count;
+        };
 
-            if (!allowedAgents.has(agent)) {
-                throw new Error(`background-guard: background tasks are limited to ${[...allowedAgents].join(', ')}; run this ${agent} task in the foreground (omit background).`);
+        const registrations = [
+            // subagent.ts's per-session context hook appends the agent list to this
+            // description rather than replacing it, so the rules reach the model.
+            await ctx.tool.transform(editor => editor.update(tool, info => {
+                info.description = `${info.description}\n\n${rules}`;
+            })),
+
+            // Throwing refuses this call alone; the model sees the error message.
+            await ctx.tool.hook('execute.before', event => {
+                if (event.tool !== tool || !isObject(event.input) || event.input.background !== true) {
+                    return;
+                }
+
+                const agent = event.input.agent;
+
+                if (!allowedAgents.has(agent)) {
+                    throw new Error(`background-guard: background tasks are limited to ${[...allowedAgents].join(', ')}; run this ${agent} task in the foreground (omit background).`);
+                }
+
+                if (occupied(event.sessionID) >= maxRunning) {
+                    throw new Error(`background-guard: ${maxRunning} background tasks are already running in this session; wait for one to finish, or run this task in the foreground (omit background).`);
+                }
+
+                slots.set(event.id, {
+                    parent: event.sessionID,
+                    until: Date.now() + pendingTtlMs,
+                });
+            }),
+
+            // Also sees a foreground task moved to the background with Ctrl+B: its result
+            // carries status running as well, so it counts against the cap from then on.
+            // Must never throw: a rejection here is a defect, not a tool error.
+            await ctx.tool.hook('execute.after', event => {
+                if (event.tool !== tool) {
+                    return;
+                }
+
+                slots.delete(event.id);
+
+                const metadata = event.status === 'completed' ? event.result?.metadata : undefined;
+                const child = metadata?.sessionID;
+
+                if (metadata?.status !== 'running' || typeof child !== 'string') {
+                    return;
+                }
+
+                slots.set(child, {
+                    parent: event.sessionID,
+                    until: Date.now() + runningTtlMs,
+                });
+            }),
+        ];
+
+        // A child interrupted for shutdown resumes on the next start, so it keeps its slot.
+        // Deletion is idempotent, so duplicate deliveries (#56290) do no harm.
+        const controller = new AbortController();
+
+        const listen = async () => {
+            try {
+                for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+                    if (!ended.has(event?.type) || event.data?.reason === 'shutdown') {
+                        continue;
+                    }
+
+                    slots.delete(event.data?.sessionID);
+                }
+            } catch {
+                // The TTL frees the slots of a dropped subscription.
             }
+        };
 
-            if (occupied(input.sessionID) >= maxRunning) {
-                throw new Error(`background-guard: ${maxRunning} background tasks are already running in this session; wait for one to finish, or run this task in the foreground (omit background).`);
-            }
+        listen();
 
-            slots.set(input.callID, {
-                parent: input.sessionID,
-                until: Date.now() + pendingTtlMs,
-            });
-        },
-
-        // Also sees a foreground task moved to the background with Ctrl+B: its receipt
-        // carries background=true as well, so it counts against the cap from then on.
-        'tool.execute.after': async (input, output) => {
-            if (input.tool !== 'task') {
-                return;
-            }
-
-            slots.delete(input.callID);
-
-            const child = output.metadata?.sessionId ?? output.metadata?.sessionID;
-
-            if (output.metadata?.background !== true || child === undefined) {
-                return;
-            }
-
-            slots.set(child, {
-                parent: input.sessionID,
-                until: Date.now() + runningTtlMs,
-            });
-        },
-
-        // A child goes idle on completion, failure and cancellation alike.
-        event: async ({ event }) => {
-            if (event.type === 'session.idle') {
-                slots.delete(event.properties?.sessionID);
-            }
-        },
-    };
+        return async () => {
+            controller.abort();
+            await Promise.allSettled(registrations.map(registration => registration.dispose()));
+            slots.clear();
+        };
+    },
 };

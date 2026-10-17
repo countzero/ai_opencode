@@ -8,22 +8,21 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 
 | Path                            | What it does                                        | Runs on |
 | ------------------------------- | --------------------------------------------------- | ------- |
-| `plugins/todo-state.js`         | Re-states the open todo list on every step          | any     |
 | `plugins/llama-limits.js`       | Fills llama-server providers from their presets     | any     |
-| `plugins/chrome-slot.js`        | Gives every OpenCode process its own Chrome profile | Windows |
 | `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
-| `tui-plugins/slot-title.js`     | Shows the Chrome slot in the terminal title         | Windows |
+| `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
+| `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
 | `.opencode/skills/plan-review/` | Second-pass design review of a plan                 | any     |
 | `.opencode/skills/trim-prose/`  | Tightens the comments and docs a branch changes     | bash    |
 | `opencode.json`                 | Models, agents, permissions, MCP servers, providers | Windows |
-| `tui.json`                      | Theme and the TUI plugin                            | any     |
+| `cli.json`                      | Theme and the TUI plugin                            | any     |
 | `.opencode/AGENTS.md`           | Rules for sessions inside this repository           | any     |
 
 ## Reuse a Plugin or Skill
 
 Every plugin states how to install it in its header comment. A skill directory goes into `~/.config/opencode/skills/` to load in every project, or into a project's `.opencode/skills/` to load only there; here the skills sit in `.opencode/skills/`, so they load only when OpenCode runs inside this directory.
 
-The plugins are tested against OpenCode 1.18.34, which `"autoupdate": false` keeps in place. `todo-state.js` relies on an experimental hook, `background-guard.js` on an experimental feature and `slot-title.js` patches the renderer, so a newer release can break any of them. On Linux and macOS, `chrome-slot.js` claims a localhost port instead of a named pipe; that path is not yet tested end to end.
+The plugins are tested against OpenCode 2.0.32, which `"update": "disable"` keeps in place; a newer 2.x release can break them. A machine still on 1.x follows [`MIGRATION.md`](./MIGRATION.md).
 
 ## Install the Whole Configuration
 
@@ -35,7 +34,7 @@ Download and install the latest versions:
 
 * [Git](https://git-scm.com/download)
 * [Node.js LTS](https://nodejs.org/en/download), installed to `C:\Program Files\nodejs`, whose `npx` starts the `chrome-devtools` MCP server
-* [OpenCode](https://opencode.ai/docs/#install)
+* OpenCode 2, through npm: `npm -g install @opencode/cli@2`; the `@2` keeps a future major release from arriving unasked
 * [Chromium](https://www.chromium.org/getting-involved/download-chromium/), installed per user to `C:\Users\<name>\AppData\Local\Chromium`
 
 ### 2. Clone the repository from GitHub
@@ -62,29 +61,33 @@ New-Item -ItemType Directory -Force "$HOME\.secrets" | Out-Null
 Set-Content -NoNewline "$HOME\.secrets\windows-mcp-key" "<token>"
 ```
 
-> [!IMPORTANT]
-> OpenCode refuses to start while a referenced file is missing (`bad file reference: … does not exist`), so create every file in the table before the first start.
+A missing file leaves its value empty and logs a warning; `windows-mcp` then fails to authenticate.
 
-### 4. Set the experimental flags
-
-These settings exist only as environment variables, not as `opencode.json` keys, so they go into the PowerShell profile (`$PROFILE.CurrentUserAllHosts`) and reach every OpenCode started from that shell:
+### 4. Disable the service
 
 ```PowerShell
-$env:OPENCODE_EXPERIMENTAL_CODE_MODE = 'true'
-$env:OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX = '128000'
-$env:OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS = 'true'
+opencode service set disabled true
 ```
 
-| Variable                                     | Effect                                                                                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `OPENCODE_EXPERIMENTAL_CODE_MODE`            | Reaches the MCP tools through one script tool and a search instead of listing each one      |
-| `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`     | Raises the output cap per reply from 32,000 tokens to 128,000, the Claude models' own limit |
-| `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS` | Lets the task tool run subagents in the background while the conversation goes on           |
+By default all OpenCode windows share one background service, and its MCP servers would hand every window the same Chrome slot. Without the service, each window starts a private server that inherits the window's environment and ends with it. This costs `/pair` and attaching a second client to a running session.
 
-> [!IMPORTANT]
-> Thinking counts against the output cap, and a reply that reaches it ends as if it had finished, with no error. At 32,000 a long thinking pass at `max` effort can end a turn with no text and no tool call. A value above the model's limit has no effect, because OpenCode sends the lower of the two.
+### 5. Add the launcher
 
-### 5. Start OpenCode
+Add this function to the PowerShell profile (`$PROFILE.CurrentUserAllHosts`), so `opencode` runs through the launcher that claims a Chrome slot:
+
+```PowerShell
+function opencode { & "$HOME\.config\opencode\scripts\opencode.ps1" @args }
+```
+
+### 6. Install the plugin
+
+```PowerShell
+opencode plugin add opencode-claude-auth@3.0.0
+```
+
+OpenCode installs the plugins named in `opencode.json` into `~/.cache/opencode/npm` on its own, but on Windows the first install of this one takes about a minute, and OpenCode gives plugins 5 s to activate: every start fails with "Location plugins did not finish activating" and abandons the install halfway. `plugin add` runs the same install in the foreground; once it is cached, startup takes a second. Repeat it after changing the plugin's version in `opencode.json`.
+
+### 7. Start OpenCode
 
 Start OpenCode in any project directory:
 
@@ -92,13 +95,18 @@ Start OpenCode in any project directory:
 opencode
 ```
 
-On the first start, OpenCode installs the plugin runtime into `node_modules/` and writes `package.json` and the lock files; all of them are gitignored.
+OpenCode writes `service.json` into this directory; the `.gitignore` keeps it out.
+
+On the first start, log in once:
+
+1. `/connect`, then **Anthropic**, then **Import Claude Code subscription**. This reads `~/.claude/.credentials.json`, so Claude Code must be logged in.
+2. `opencode mcp auth atlassian` in a shell, for the Atlassian MCP server.
 
 ## Usage
 
 ### Chrome profile slots
 
-Every OpenCode process claims the lowest free slot `N` and runs the `chrome-devtools` MCP server on the profile `~/.cache/chrome-devtools-mcp/opencode-profile-N`. Parallel instances therefore never share a browser, and a slot keeps its logins between sessions. The window title shows the slot as a `[N]` prefix, and every agent shell sees it as `$env:CHROME_SLOT`.
+The launcher claims the lowest free slot `N` for its window and runs the `chrome-devtools` MCP server on the profile `~/.cache/chrome-devtools-mcp/opencode-profile-N`. Parallel instances therefore never share a browser, and a slot keeps its logins between sessions. The launcher passes the slot on as `$env:CHROME_SLOT`, which `opencode.json` reads. The window title shows the slot as a `[N]` prefix, and every agent shell sees it as `$env:CHROME_SLOT`.
 
 To prefer a specific slot, set it before starting:
 
@@ -107,29 +115,29 @@ $env:CHROME_SLOT = '3'; opencode
 ```
 
 > [!NOTE]
-> The preference is honored only while the slot is free; a taken slot falls back to the lowest free one. A slot is released when its OpenCode process ends, however it ends.
+> The preference is honored only while the slot is free; a taken slot falls back to the lowest free one. A slot is released when its window ends, however it ends. An OpenCode started without the launcher, from `cmd` or inside an agent shell, gets no slot of its own.
 
-The mechanics are the header comments of [`plugins/chrome-slot.js`](./plugins/chrome-slot.js) and [`tui-plugins/slot-title.js`](./tui-plugins/slot-title.js).
+The mechanics are the header comments of [`scripts/opencode.ps1`](./scripts/opencode.ps1) and [`tui-plugins/slot-title/`](./tui-plugins/slot-title/).
 
 ### llama-server models
 
-A `llama.cpp@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each router for the models of its preset file and adds them with their context limit and input modalities. A server that does not answer within 100 ms shows no models.
+A `llama.cpp@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each router for the models of its preset file and adds them with their context limit and input modalities. A server that does not answer within a second shows no models.
 
 > [!NOTE]
-> The list is read once per start: after starting llama-server or editing a preset, restart OpenCode.
+> The list is read at startup: after starting llama-server or editing a preset, restart OpenCode.
 
 ### Background subagents
 
-With `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS` on, the agent can start a subagent in the background and keep talking; its result arrives as a separate message when it finishes. **Ctrl+B** moves a running foreground subagent to the background. **Esc** on the session stops all of its background tasks; there is no way to stop a single one.
+The agent can start a subagent in the background and keep talking; its result arrives as a separate message when it finishes. **Ctrl+B** moves a running foreground subagent to the background. **Ctrl+D** on a running subagent in the composer's subagent list interrupts just that one; **Esc** interrupts the session.
 
-[`plugins/background-guard.js`](./plugins/background-guard.js) allows background tasks only for the read-only `explore` agent and at most 20 running per session; a background call for another agent or beyond the cap fails with an error that tells the agent to run it in the foreground. It also asks the agent to announce what it starts and to report once all results are in. Without the flag the plugin does nothing.
+[`plugins/background-guard.js`](./plugins/background-guard.js) allows background tasks only for the read-only `explore` agent and at most 20 running per session; a background call for another agent or beyond the cap fails with an error that tells the agent to run it in the foreground. It also asks the agent to announce what it starts and to report once all results are in.
 
 > [!NOTE]
-> Browser work stays in the foreground: one OpenCode process has one Chrome profile, and parallel browser tasks would collide on it.
+> Browser work stays in the foreground: one OpenCode window has one Chrome profile, and parallel browser tasks would collide on it.
 
 ### Change the configuration
 
-Edit the files in place and restart OpenCode. Machine-specific values go through `{env:…}` or `{file:…}` rather than into the file, so the same `opencode.json` works on every machine; paths use `C:/Users/{env:USERNAME}/…`, because the backslashes in `USERPROFILE` would break the JSON.
+Edit the files in place. OpenCode reloads the configuration and plugins when they change and keeps the last good version if a reload fails; restart it if a change does not show (#56421). Machine-specific values go through `{env:…}` or `{file:…}` rather than into the file, so the same `opencode.json` works on every machine; paths use `C:/Users/{env:USERNAME}/…`, because the backslashes in `USERPROFILE` would break the JSON.
 
 ## License
 

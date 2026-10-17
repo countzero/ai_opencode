@@ -2,10 +2,14 @@
 // each with the context one request gets and its input modalities, so opencode.json carries
 // only the baseURL and a preset change needs no config edit.
 //
-// The config hook runs before OpenCode reads cfg.provider, which makes it the one place to
-// add models: the plugin `provider.models` hook only reaches providers in the models.dev
-// catalog. The list is read once per start, so a server started later, or a preset edited,
-// shows after a restart.
+// A model transform adds the models: a provider transform from a file plugin runs before the
+// built-in one that folds in the config's providers, so it never sees them. The first run
+// starts one fetch per baseURL without awaiting it, so an unreachable host never delays
+// startup; once presets arrive, model.reload() re-runs the transform with the cached list.
+// The list is read once per start, so a server started later, or a preset edited, shows
+// after a restart.
+// A failed fetch goes to console.warn, which OpenCode passes through to stderr only: visible
+// with `opencode <command> --print-logs`, absent from opencode.log.
 //
 // A loaded model reports its slot context (`meta.n_ctx`). For the others the context is
 // derived from the preset the way llama-server sizes it (server.cpp, llama-context.cpp,
@@ -17,14 +21,17 @@
 // Only router entries from a preset file are listed (`source: "preset"`): --models-dir adds
 // every GGUF in the directory, most of them without a tuned preset.
 //
-// Install: drop this file into ~/.config/opencode/plugins/ and restart. The loader calls
-// every export as a plugin, so this module exports nothing else.
+// Install: drop this file into ~/.config/opencode/plugins/ and restart. The loader reads
+// only the default export, `{ id, setup }`.
 
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 
-/** Bounds the startup delay an unreachable host causes; a LAN connect takes 3-7 ms. */
-const timeoutMs = 100;
+/**
+ * During boot the event loop is busy enough that 100 ms fails a server answering in 40 ms.
+ * A second matches OpenCode's own local-provider discovery.
+ */
+const timeoutMs = 1000;
 
 /**
  * llama-server reports no output limit, yet OpenCode budgets a reply by one and compacts once
@@ -75,7 +82,7 @@ const toModel = (entry, configured = {}) => {
     return {
         ...configured,
         name: configured.name ?? entry.id,
-        modalities: { input: entry.architecture?.input_modalities ?? ['text'], output: ['text'] },
+        input: entry.architecture?.input_modalities ?? ['text'],
         ...(context ? { limit: { context, output: Math.min(outputCeiling, Math.floor(context / outputShare)) } } : {}),
     };
 };
@@ -114,38 +121,57 @@ const fetchModels = async ({ baseURL, apiKey }) => {
     return (await response.json()).data ?? [];
 };
 
-// Not awaited: the log endpoint belongs to the instance this config hook is still building.
-const warn = (client, message) => {
-    Promise.resolve()
-        .then(() => client.app.log({ body: { service: 'llama-limits', level: 'warn', message } }))
-        .catch(() => {});
-};
+// A v1 `npm` migrates to `aisdk:@ai-sdk/openai-compatible` and the native route rewrites it to
+// `@opencode/ai/providers/openai-compatible`; both end the same way. The editor also lists
+// catalog providers from models.dev, many of them openai-compatible clouds; their models carry
+// a release date, a model from the config does not, so only providers without one are probed.
+const servers = editor => editor.provider.list()
+    .filter(({ provider, models }) => String(provider.package ?? '').endsWith('openai-compatible')
+        && typeof provider.settings?.baseURL === 'string'
+        && [...models.values()].every(model => !model.time?.released));
 
-export const LlamaLimits = async ({ client }) => ({
-    config: async config => {
-        const servers = Object.entries(config.provider ?? {})
-            .filter(([, provider]) => provider.npm === '@ai-sdk/openai-compatible' && provider.options?.baseURL);
+export default {
+    id: 'local.llama-limits',
+    setup(ctx) {
+        /** baseURL -> preset entries, or null while the fetch runs or after it failed. */
+        const presets = new Map();
 
-        await Promise.all(servers.map(async ([id, provider]) => {
-            let entries;
+        const discover = (id, settings) => {
+            presets.set(settings.baseURL, null);
+            fetchModels(settings)
+                .then(entries => {
+                    const found = entries.filter(entry => entry.owned_by === 'llamacpp' && entry.source === 'preset');
 
-            try {
-                entries = await fetchModels(provider.options);
-            } catch (error) {
-                warn(client, `${id}: ${provider.options.baseURL} not reachable (${error.message})`);
+                    if (found.length) {
+                        presets.set(settings.baseURL, found);
 
-                return;
-            }
+                        return ctx.model.reload();
+                    }
+                })
+                .catch(error => console.warn(`llama-limits: ${id}: ${settings.baseURL} not reachable (${error.message})`));
+        };
 
-            const presets = entries.filter(entry => entry.owned_by === 'llamacpp' && entry.source === 'preset');
+        return ctx.model.transform(editor => {
+            for (const { provider, models } of servers(editor)) {
+                const { baseURL } = provider.settings;
 
-            if (presets.length) {
-                provider.models ??= {};
+                if (!presets.has(baseURL)) {
+                    discover(provider.id, provider.settings);
+                }
 
-                for (const entry of presets) {
-                    provider.models[entry.id] = toModel(entry, provider.models[entry.id]);
+                for (const entry of presets.get(baseURL) ?? []) {
+                    const model = toModel(entry, models.get(entry.id));
+
+                    editor.update(provider.id, entry.id, draft => {
+                        draft.name = model.name;
+                        draft.capabilities = { ...draft.capabilities, input: model.input, output: ['text'] };
+
+                        if (model.limit) {
+                            draft.limit = { ...draft.limit, ...model.limit };
+                        }
+                    });
                 }
             }
-        }));
+        }).then(registration => registration.dispose);
     },
-});
+};
