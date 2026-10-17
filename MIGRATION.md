@@ -9,8 +9,7 @@ There is no in-between state: 1.x and 2.0 install the same `opencode` command, a
 Close every OpenCode window, then in a new pwsh window:
 
 ```PowerShell
-git -C "$HOME\.config\opencode" fetch
-git -C "$HOME\.config\opencode" switch opencode-2
+git -C "$HOME\.config\opencode" pull
 & "$HOME\.config\opencode\scripts\migrate.ps1"
 ```
 
@@ -53,10 +52,10 @@ After raising a plugin's version in `opencode.json`, run `opencode plugin add <p
 
 ## Roll back
 
-Close every OpenCode window, then, still on the `opencode-2` branch:
+Close every OpenCode window, then:
 
 ```PowerShell
 & "$HOME\.config\opencode\scripts\migrate.ps1" -Rollback
 ```
 
-Pass the same `-BackupDir` as the migration. The 2.0 data is moved aside, not deleted.
+Pass the same `-BackupDir` as the migration. The 2.0 data is moved aside, not deleted, and the configuration is left on the tag `v1.19.3-final`.

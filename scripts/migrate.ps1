@@ -24,7 +24,7 @@ Every step checks its own state, so a rerun after a failure skips what is done. 
 goes to the system temp directory.
 
 -Rollback reinstalls opencode-ai@1, restores the data backup and the profile, and checks
-out -LegacyBranch last, which removes this script from the checkout.
+out -LegacyRef last, the tag of the last 1.x configuration, which removes this script.
 
 .EXAMPLE
 & "$HOME\.config\opencode\scripts\migrate.ps1"
@@ -49,7 +49,8 @@ param(
     # Its npm, not whichever an active conda environment puts first on Path.
     [string] $NodeDir = 'C:\Program Files\nodejs',
 
-    [string] $LegacyBranch = 'main'
+    # A tag, so git leaves the checkout on a detached HEAD.
+    [string] $LegacyRef = 'v1.19.3-final'
 )
 
 Set-StrictMode -Version Latest
@@ -308,8 +309,8 @@ function Invoke-Rollback {
     }
 
     # Last: the checkout removes this script.
-    Step "Config repository: check out $LegacyBranch"
-    Invoke-Checked git @('-C', $config, 'checkout', '--quiet', $LegacyBranch)
+    Step "Config repository: check out $LegacyRef"
+    Invoke-Checked git @('-C', $config, 'checkout', '--quiet', $LegacyRef)
 }
 
 $npmPrefix = if (Test-Path $npm) { "$(& $npm prefix -g)".Trim() } else { Join-Path $env:APPDATA 'npm' }
