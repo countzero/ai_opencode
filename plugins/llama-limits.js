@@ -1,6 +1,7 @@
 // Fills every llama-server provider in the config with the models of the server's presets,
-// each with the context one request gets and its input modalities, so opencode.json carries
-// only the baseURL and a preset change needs no config edit.
+// and every Strata provider with its loaded model, each with the context one request gets and
+// its input modalities, so opencode.json carries only the baseURL and a preset change needs no
+// config edit.
 //
 // A model transform adds the models: a provider transform from a file plugin runs before the
 // built-in one that folds in the config's providers, so it never sees them. The first run
@@ -20,6 +21,11 @@
 //
 // Only router entries from a preset file are listed (`source: "preset"`): --models-dir adds
 // every GGUF in the directory, most of them without a tuned preset.
+//
+// A server without presets may be Strata (github.com/Niko1221/Strata), whose /health says
+// `"service": "strata"`. Its /v1/models lists the loaded model with `meta.n_ctx` and its input
+// modalities, plus one entry per alias (`alias_of`), which is skipped. Strata also takes
+// `reasoning_effort`, offered as the variants none, low, medium and high.
 //
 // Install: drop this file into ~/.config/opencode/plugins/ and restart. The loader reads
 // only the default export, `{ id, setup }`.
@@ -41,6 +47,15 @@ const timeoutMs = 1000;
 const outputShare = 4;
 
 const outputCeiling = 65536;
+
+/**
+ * Strata refuses a request whose prompt plus max_tokens passes the context (400), where
+ * llama-server stops early. Above OpenCode's 32,000 reserve, a prompt just short of compaction
+ * plus a full reply would overrun.
+ */
+const strataOutputCeiling = 32000;
+
+const strataEfforts = ['none', 'low', 'medium', 'high'];
 
 const kvPadding = 256;
 
@@ -76,23 +91,29 @@ const presetContext = preset => {
     return trained ? Math.min(slot, Number(trained[1])) : slot;
 };
 
-const toModel = (entry, configured = {}) => {
-    const context = entry.meta?.n_ctx || presetContext(parsePreset(entry.status?.preset));
+const limit = (context, ceiling) => (context ? { context, output: Math.min(ceiling, Math.floor(context / outputShare)) } : undefined);
 
-    return {
-        ...configured,
-        name: configured.name ?? entry.id,
-        input: entry.architecture?.input_modalities ?? ['text'],
-        ...(context ? { limit: { context, output: Math.min(outputCeiling, Math.floor(context / outputShare)) } } : {}),
-    };
-};
+const fromPreset = entry => ({
+    id: entry.id,
+    input: entry.architecture?.input_modalities ?? ['text'],
+    limit: limit(entry.meta?.n_ctx || presetContext(parsePreset(entry.status?.preset)), outputCeiling),
+});
+
+/** While the engine restarts, an entry can report no context; /health keeps the last one. */
+const fromStrata = (entry, health) => ({
+    id: entry.id,
+    input: entry.architecture?.input_modalities ?? ['text'],
+    limit: limit(entry.meta?.n_ctx || health.max_context, strataOutputCeiling),
+    tools: true,
+    variants: strataEfforts.map(effort => ({ id: effort, settings: { reasoningEffort: effort } })),
+});
 
 // A LAN name resolves to its IPv6 addresses first, llama-server listens on 0.0.0.0 by
 // default, and Bun tries the IPv6 addresses before IPv4: 6 s against a server on this
 // machine, far past timeoutMs. Only for plain HTTP: TLS validates the certificate against
 // the name, so an https URL keeps it.
-const modelsURL = async baseURL => {
-    const url = new URL(`${baseURL.replace(/\/+$/, '')}/models`);
+const resolve = async href => {
+    const url = new URL(href);
 
     if (url.protocol === 'http:' && !isIP(url.hostname.replace(/^\[|\]$/g, ''))) {
         url.hostname = (await lookup(url.hostname, { family: 4 })).address;
@@ -101,15 +122,17 @@ const modelsURL = async baseURL => {
     return url;
 };
 
+const trimmed = baseURL => baseURL.replace(/\/+$/, '');
+
 /** dns.lookup takes no signal, and an unknown name takes over a second to fail. */
 const within = (signal, promise) => Promise.race([
     promise,
     new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true })),
 ]);
 
-const fetchModels = async ({ baseURL, apiKey }) => {
+const fetchJSON = async (href, apiKey) => {
     const signal = AbortSignal.timeout(timeoutMs);
-    const response = await fetch(await within(signal, modelsURL(baseURL)), {
+    const response = await fetch(await within(signal, resolve(href)), {
         headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
         signal,
     });
@@ -118,7 +141,27 @@ const fetchModels = async ({ baseURL, apiKey }) => {
         throw new Error(`HTTP ${response.status}`);
     }
 
-    return (await response.json()).data ?? [];
+    return response.json();
+};
+
+/** Strata serves /health beside /v1, without auth. */
+const strataModels = async ({ baseURL, apiKey }, entries) => {
+    const health = await fetchJSON(`${trimmed(baseURL).replace(/\/v1$/, '')}/health`, apiKey);
+
+    if (health?.service !== 'strata') {
+        return [];
+    }
+
+    return entries
+        .filter(entry => !entry.alias_of && (entry.architecture?.output_modalities ?? ['text']).includes('text'))
+        .map(entry => fromStrata(entry, health));
+};
+
+const discoverModels = async settings => {
+    const entries = (await fetchJSON(`${trimmed(settings.baseURL)}/models`, settings.apiKey)).data ?? [];
+    const presets = entries.filter(entry => entry.owned_by === 'llamacpp' && entry.source === 'preset');
+
+    return presets.length ? presets.map(fromPreset) : strataModels(settings, entries);
 };
 
 // A v1 `npm` migrates to `aisdk:@ai-sdk/openai-compatible` and the native route rewrites it to
@@ -133,17 +176,15 @@ const servers = editor => editor.provider.list()
 export default {
     id: 'local.llama-limits',
     setup(ctx) {
-        /** baseURL -> preset entries, or null while the fetch runs or after it failed. */
-        const presets = new Map();
+        /** baseURL -> discovered models, or null while the fetch runs or after it failed. */
+        const discovered = new Map();
 
         const discover = (id, settings) => {
-            presets.set(settings.baseURL, null);
-            fetchModels(settings)
-                .then(entries => {
-                    const found = entries.filter(entry => entry.owned_by === 'llamacpp' && entry.source === 'preset');
-
+            discovered.set(settings.baseURL, null);
+            discoverModels(settings)
+                .then(found => {
                     if (found.length) {
-                        presets.set(settings.baseURL, found);
+                        discovered.set(settings.baseURL, found);
 
                         return ctx.model.reload();
                     }
@@ -155,19 +196,26 @@ export default {
             for (const { provider, models } of servers(editor)) {
                 const { baseURL } = provider.settings;
 
-                if (!presets.has(baseURL)) {
+                if (!discovered.has(baseURL)) {
                     discover(provider.id, provider.settings);
                 }
 
-                for (const entry of presets.get(baseURL) ?? []) {
-                    const model = toModel(entry, models.get(entry.id));
-
-                    editor.update(provider.id, entry.id, draft => {
-                        draft.name = model.name;
-                        draft.capabilities = { ...draft.capabilities, input: model.input, output: ['text'] };
+                for (const model of discovered.get(baseURL) ?? []) {
+                    editor.update(provider.id, model.id, draft => {
+                        draft.name = models.get(model.id)?.name ?? model.id;
+                        draft.capabilities = {
+                            ...draft.capabilities,
+                            input: model.input,
+                            output: ['text'],
+                            ...(model.tools ? { tools: true } : {}),
+                        };
 
                         if (model.limit) {
                             draft.limit = { ...draft.limit, ...model.limit };
+                        }
+
+                        if (model.variants && !draft.variants?.length) {
+                            draft.variants = model.variants;
                         }
                     });
                 }

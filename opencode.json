@@ -101,7 +101,8 @@
         }
     },
 
-    // The models of a llama.cpp provider come from its server's presets (plugins/llama-limits.js).
+    // The models of a llama.cpp provider come from its server's presets, those of a Strata
+    // provider from its loaded model (plugins/llama-limits.js).
     "provider": {
 
         "llama.cpp@PC-Finn": {
@@ -117,6 +118,14 @@
             "name": "llama-server@Laptop-Finn",
             "options": {
                 "baseURL": "http://laptop-finn:8080/v1"
+            }
+        },
+
+        "strata@Laptop-Finn": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "strata@Laptop-Finn",
+            "options": {
+                "baseURL": "http://laptop-finn:8083/v1"
             }
         }
     }
