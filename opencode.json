@@ -30,73 +30,128 @@
         // path, so this denies edits to sibling projects but never to the current one.
         "edit": {
             "D:/Arbeit/**": "deny"
+        },
+        // Mail tools exist only in the mail agent, which allows its read-only ones again.
+        "commonpost-mail_*": "deny"
+    },
+
+    "agents": {
+        // Reads Thunderbird mail, calendars and contacts on a local model and changes nothing;
+        // plugins/local-only-mail.js refuses any other provider. All else is denied, the web
+        // and subagents too, so a message's text cannot carry anything out. displayMessage
+        // stays off: it marks the message read.
+        "mail": {
+            "description": "Reads Thunderbird mail on a local model, read-only",
+            "mode": "primary",
+            "model": "strata@Laptop-Finn/qwen3.8-flash-next-unsloth-ud-iq4_xs",
+            "permissions": [
+                { "action": "*", "resource": "*", "effect": "deny" },
+                { "action": "read", "resource": "*", "effect": "allow" },
+                { "action": "read", "resource": "*.env", "effect": "deny" },
+                { "action": "read", "resource": "*.env.*", "effect": "deny" },
+                { "action": "glob", "resource": "*", "effect": "allow" },
+                { "action": "grep", "resource": "*", "effect": "allow" },
+                { "action": "question", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_listAccounts", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_getAccountAccess", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_listFolders", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_searchMessages", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_getRecentMessages", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_getMessage", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_getMessages", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_listFilters", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_searchContacts", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_getContact", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_listCalendars", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_listEvents", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_listTasks", "resource": "*", "effect": "allow" },
+                { "action": "commonpost-mail_listCategories", "resource": "*", "effect": "allow" }
+            ]
         }
     },
 
     "mcp": {
+        "servers": {
 
-        "windows-mcp": {
-            "type": "remote",
-            "url": "http://10.0.0.53:8000/mcp",
-            // The VM is usually off, and an unreachable server holds the first prompt back
-            // for two 21 s connect attempts. Connect it in /mcps once the VM runs.
-            "enabled": false,
-            "oauth": false,
-            "headers": {
-                "Authorization": "Bearer {file:~/.secrets/windows-mcp-key}"
-            }
-        },
+            "windows-mcp": {
+                "type": "remote",
+                "url": "http://10.0.0.53:8000/mcp",
+                // The VM is usually off, and an unreachable server holds the first prompt back
+                // for two 21 s connect attempts. Connect it in /mcps once the VM runs.
+                "disabled": true,
+                "oauth": false,
+                "headers": {
+                    "Authorization": "Bearer {file:~/.secrets/windows-mcp-key}"
+                }
+            },
 
-        "atlassian": {
-            "type": "remote",
-            "url": "https://mcp.atlassian.com/v1/mcp",
-            "oauth": {}
-        },
+            "atlassian": {
+                "type": "remote",
+                "url": "https://mcp.atlassian.com/v1/mcp",
+                "oauth": {}
+            },
 
-        "chrome-devtools": {
-            "type": "local",
-            "command": [
-                "C:\\Program Files\\nodejs\\npx.cmd", // forward slashes fail to launch (#52771)
-                "-y",
-                "chrome-devtools-mcp@latest",
-                "--executablePath=C:/Users/{env:USERNAME}/AppData/Local/Chromium/Application/chrome.exe",
-                "--userDataDir=C:/Users/{env:USERNAME}/.cache/chrome-devtools-mcp/opencode-profile-{env:CHROME_SLOT}",
-                "--no-usage-statistics",
-                "--ignoreDefaultChromeArg=--enable-automation",
-                "--chromeArg=--disable-blink-features=AutomationControlled"
-            ],
-            // The npx shim resolves `node` from Path again, so an active conda env would
-            // otherwise pick the MCP's Node. No timeout: the 30 s startup default covers
-            // npx's registry check, and a bare number would also cap startup at that value.
-            "environment": {
-                "Path": "C:\\Program Files\\nodejs;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem"
-            }
-        },
+            "chrome-devtools": {
+                "type": "local",
+                "command": [
+                    "C:\\Program Files\\nodejs\\npx.cmd", // forward slashes fail to launch (#52771)
+                    "-y",
+                    "chrome-devtools-mcp@latest",
+                    "--executablePath=C:/Users/{env:USERNAME}/AppData/Local/Chromium/Application/chrome.exe",
+                    "--userDataDir=C:/Users/{env:USERNAME}/.cache/chrome-devtools-mcp/opencode-profile-{env:CHROME_SLOT}",
+                    "--no-usage-statistics",
+                    "--ignoreDefaultChromeArg=--enable-automation",
+                    "--chromeArg=--disable-blink-features=AutomationControlled"
+                ],
+                // The npx shim resolves `node` from Path again, so an active conda env would
+                // otherwise pick the MCP's Node. No timeout: the 30 s startup default covers
+                // npx's registry check.
+                "environment": {
+                    "Path": "C:\\Program Files\\nodejs;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem"
+                }
+            },
 
-        // Chrome on an Android device over adb forward tcp:9222 localabstract:chrome_devtools_remote;
-        // connects on first use, so it idles harmlessly while no device is forwarded.
-        "chrome-android": {
-            "type": "local",
-            "command": [
-                "C:\\Program Files\\nodejs\\npx.cmd", // forward slashes fail to launch (#52771)
-                "-y",
-                "chrome-devtools-mcp@latest",
-                "--browser-url=http://127.0.0.1:9222",
-                "--no-usage-statistics"
-            ],
-            "environment": {
-                "Path": "C:\\Program Files\\nodejs;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem"
-            }
-        },
+            // Chrome on an Android device over adb forward tcp:9222 localabstract:chrome_devtools_remote;
+            // connects on first use, so it idles harmlessly while no device is forwarded.
+            "chrome-android": {
+                "type": "local",
+                "command": [
+                    "C:\\Program Files\\nodejs\\npx.cmd", // forward slashes fail to launch (#52771)
+                    "-y",
+                    "chrome-devtools-mcp@latest",
+                    "--browser-url=http://127.0.0.1:9222",
+                    "--no-usage-statistics"
+                ],
+                "environment": {
+                    "Path": "C:\\Program Files\\nodejs;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem"
+                }
+            },
 
-        "blender": {
-            // Starts without Blender; tools reach it once the add-on's server runs (N-panel).
-            "type": "local",
-            // mcp-for-blender 2.1.3 in the conda env "blender-mcp". To upgrade, run
-            // pip install mcp-for-blender==<version> there, then rerun install-addon.
-            "command": ["C:\\Miniconda\\envs\\blender-mcp\\Scripts\\mcp-for-blender.exe"],
-            "environment": {
-                "DISABLE_TELEMETRY": "true"
+            "blender": {
+                // Starts without Blender; tools reach it once the add-on's server runs (N-panel).
+                "type": "local",
+                // mcp-for-blender 2.1.3 in the conda env "blender-mcp". To upgrade, run
+                // pip install mcp-for-blender==<version> there, then rerun install-addon.
+                "command": ["C:\\Miniconda\\envs\\blender-mcp\\Scripts\\mcp-for-blender.exe"],
+                "environment": {
+                    "DISABLE_TELEMETRY": "true"
+                }
+            },
+
+            // Thunderbird mail through the Commonpost MCP add-on 0.17.3 (bridge 0.17.1), for the
+            // mail agent only: connect it in /mcps when needed. plugins/local-only-mail.js keeps
+            // its data on local models, which needs the tools outside Code Mode. The bridge never
+            // updates itself: replace mcp-bridge.cjs when the add-on's options page (Bridge) says
+            // so. If it cannot reach Thunderbird after a Thunderbird update, check whether
+            // Experiment add-ons were suppressed (extensions.experiments.suppressed).
+            "commonpost-mail": {
+                "type": "local",
+                "command": [
+                    "C:\\Program Files\\nodejs\\node.exe", // forward slashes fail to launch (#52771)
+                    "C:/Users/{env:USERNAME}/commonpost-mcp/mcp-bridge.cjs"
+                ],
+                "disabled": true,
+                "codemode": false
             }
         }
     },

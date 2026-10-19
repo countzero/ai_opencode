@@ -10,6 +10,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | ------------------------------- | --------------------------------------------------- | ------- |
 | `plugins/llama-limits.js`       | Fills llama-server and Strata providers             | any     |
 | `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
+| `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
 | `scripts/migrate.ps1`           | Moves a machine from OpenCode 1.x to 2.0            | Windows |
 | `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
@@ -126,6 +127,27 @@ A `llama.cpp@…` or `strata@…` provider in `opencode.json` carries only its `
 
 > [!NOTE]
 > The list is read at startup: after starting a server or editing a preset, restart OpenCode. `opencode run` checks its model before the list arrives and reports "Model unavailable"; the TUI is not affected.
+
+### Mail
+
+The `mail` agent reads Thunderbird mail, calendars and contacts on a local model and changes nothing. It talks to the [Commonpost MCP add-on](https://github.com/commonpost/thunderbird-mcp) through the `commonpost-mail` server, which is off until connected in `/mcps`.
+
+Setup, once:
+
+1. Download `commonpost-mcp-v<version>.xpi` and `mcp-bridge.cjs` from the [latest release](https://github.com/commonpost/thunderbird-mcp/releases/latest) into `~/commonpost-mcp/`, and check both with `gh attestation verify <file> --repo commonpost/thunderbird-mcp`.
+2. In Thunderbird: Tools > Add-ons and Themes > gear menu > Install Add-on From File, pick the `.xpi`, restart Thunderbird.
+3. In the add-on's options page, choose the accounts the assistant may read, turn off every tool that writes, and keep **Block skipReview** on.
+
+Use: connect `commonpost-mail` in `/mcps`, switch to the `mail` agent (Tab) and pick a local model.
+
+[`plugins/local-only-mail.js`](./plugins/local-only-mail.js) keeps the mail local:
+
+* The mail tools exist only in the `mail` agent, and only for a `llama.cpp@…` or `strata@…` model; the agent refuses to run on any other.
+* A session that has touched mail never sends its history elsewhere: switching it to another agent on a cloud model, or compacting it there, fails with an error that says why. Its title is set without a model.
+* `saveAttachments` is refused, so reading a message writes no files.
+
+> [!NOTE]
+> The bridge does not update itself. When the add-on's options page (section Bridge) recommends a newer one, replace `~/commonpost-mcp/mcp-bridge.cjs` and reconnect the server.
 
 ### Background subagents
 
