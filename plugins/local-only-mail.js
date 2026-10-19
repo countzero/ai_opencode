@@ -4,8 +4,10 @@
 // a cloud model, or compacting it there, fails with an error that says why.
 //
 // A session counts as touched once a mail tool is called in it, recorded in plugin storage
-// so it survives a restart, or when its history holds a mail tool call, which also covers a
-// fork. The `mail` agent runs on local models only, even before it has read anything.
+// so it survives a restart, or when its history holds a mail tool call. A fork or a subagent
+// session inherits the mark of the session it came from: after a compaction its history no
+// longer shows the tool calls, and a subagent's prompt can quote mail. The `mail` agent runs
+// on local models only, even before it has read anything.
 //
 // The server needs `codemode: false`: Code Mode bundles the tools into `execute`, which the
 // per-request tool list cannot strip. Which agents may call which mail tools is up to the
@@ -46,7 +48,24 @@ export default {
         // session's latest request is the one the call's result will be sent to.
         const providers = new Map();
 
-        const touched = async (sessionID, messages) => holdsMail(messages) || await ctx.storage.get(markKey(sessionID)) === true;
+        // Follows forks and subagent parents back to a marked session; `seen` guards a cycle.
+        const marked = async (sessionID, seen = new Set()) => {
+            if (!sessionID || seen.has(sessionID)) {
+                return false;
+            }
+
+            seen.add(sessionID);
+
+            if (await ctx.storage.get(markKey(sessionID)) === true) {
+                return true;
+            }
+
+            const session = await ctx.session.get({ sessionID }).catch(() => undefined);
+
+            return await marked(session?.fork?.sessionID, seen) || await marked(session?.parentID, seen);
+        };
+
+        const touched = async (sessionID, messages) => holdsMail(messages) || await marked(sessionID);
 
         const refuse = async event => {
             if (event.agent === mailAgent) {
@@ -97,6 +116,13 @@ export default {
 
             // Compaction runs on the session's current model and sends the whole history.
             await ctx.session.hook('compaction', async event => {
+                if (!isLocal(event.model.providerID)) {
+                    await refuse(event);
+                }
+            }),
+
+            // A plugin's ctx.session.generate sends the session's history like a turn does.
+            await ctx.session.hook('generate', async event => {
                 if (!isLocal(event.model.providerID)) {
                     await refuse(event);
                 }

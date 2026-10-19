@@ -143,7 +143,7 @@ Use: connect `commonpost-mail` in `/mcps` and pick a local model. While it is co
 [`plugins/local-only-mail.js`](./plugins/local-only-mail.js) keeps the mail local:
 
 * The mail tools exist only in the `mail` agent, and only for a `llama.cpp@…` or `strata@…` model; the agent refuses to run on any other.
-* A session that has touched mail never sends its history elsewhere: switching it to another agent on a cloud model, or compacting it there, fails with an error that says why. Its title is set without a model.
+* A session that has touched mail never sends its history elsewhere: switching it to another agent on a cloud model, or compacting it there, fails with an error that says why. Its title is set without a model. Forks and subagent sessions started from it inherit this.
 * `saveAttachments` is refused, so reading a message writes no files.
 
 > [!NOTE]
