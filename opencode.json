@@ -4,13 +4,6 @@
     "update": "disable",
     "share": "disabled",
 
-    "agent": {
-        "build": { "model": "anthropic/claude-opus-5-5", "variant": "high" },
-        "plan": { "model": "anthropic/claude-opus-5-5", "variant": "high" },
-        "explore": { "model": "anthropic/claude-opus-5-5", "variant": "low" },
-        "general": { "model": "anthropic/claude-opus-5-5", "variant": "low" },
-    },
-
     // Snapshots bloat the database: in 1.x their diffs produced 6.4 GiB of a 11.9 GiB
     // opencode.db. Costs undo/revert of file changes; git covers that. Revisit when
     // anomalyco/opencode#55010 is fixed.
@@ -18,24 +11,25 @@
 
     "plugins": ["opencode-claude-auth@3.0.0"],
 
-    "permission": {
+    "permissions": [
         // The last matching rule wins and the built-in default is allow (#54524),
         // so the catch-all ask comes first.
-        "external_directory": {
-            "*": "ask",
-            "D:/Arbeit/**": "allow",
-            "E:/**": "allow"
-        },
+        { "action": "external_directory", "resource": "*", "effect": "ask" },
+        { "action": "external_directory", "resource": "D:/Arbeit/**", "effect": "allow" },
+        { "action": "external_directory", "resource": "E:/**", "effect": "allow" },
         // Paths inside the project match relative to it, everything else as an absolute
         // path, so this denies edits to sibling projects but never to the current one.
-        "edit": {
-            "D:/Arbeit/**": "deny"
-        },
+        { "action": "edit", "resource": "D:/Arbeit/**", "effect": "deny" },
         // Mail tools exist only in the mail agent, which allows its read-only ones again.
-        "commonpost-mail_*": "deny"
-    },
+        { "action": "commonpost-mail_*", "resource": "*", "effect": "deny" }
+    ],
 
     "agents": {
+        "build": { "model": "anthropic/claude-opus-5-5#high" },
+        "plan": { "model": "anthropic/claude-opus-5-5#high" },
+        "explore": { "model": "anthropic/claude-opus-5-5#low" },
+        "general": { "model": "anthropic/claude-opus-5-5#low" },
+
         // Reads Thunderbird mail, calendars and contacts on a local model and changes nothing;
         // plugins/local-only-mail.js refuses any other provider. All else is denied, the web
         // and subagents too, so a message's text cannot carry anything out. displayMessage
