@@ -16,6 +16,8 @@
 // While the server is connected, the agent list offers only `mail`, which new sessions then
 // start in; otherwise it offers `build` and `plan` but not `mail`. Hidden agents only leave
 // the list: a session already on one keeps running it, under the same rules as before.
+// The `mail` agent must be defined in opencode.json: while the server is connected, nothing
+// else is offered.
 //
 // Install: drop this file into ~/.config/opencode/plugins/ and restart. The loader reads
 // only the default export, `{ id, setup }`.
@@ -85,16 +87,14 @@ export default {
         let connected = await isConnected();
 
         const registrations = [
-            // Without the mail agent, hiding the others would leave no agent to pick.
+            // OpenCode adds the agents of opencode.json, mail among them, only after the
+            // transforms of user plugins, so mail is not in the editor yet: update() creates
+            // it hidden, and the config fills in the rest.
             await ctx.agent.transform(editor => {
-                const hidden = connected && editor.get(mailAgent) ? codingAgents : [mailAgent];
-
-                for (const id of hidden) {
-                    if (editor.get(id)) {
-                        editor.update(id, agent => {
-                            agent.hidden = true;
-                        });
-                    }
+                for (const id of connected ? codingAgents : [mailAgent]) {
+                    editor.update(id, agent => {
+                        agent.hidden = true;
+                    });
                 }
             }),
 
