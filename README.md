@@ -14,10 +14,11 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
 | `scripts/migrate.ps1`           | Moves a machine from OpenCode 1.x to 2.0            | Windows |
 | `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
+| `tui-plugins/agent-refresh/`    | Refreshes the agent list after a plugin reload      | any     |
 | `.opencode/skills/plan-review/` | Second-pass design review of a plan                 | any     |
 | `.opencode/skills/trim-prose/`  | Tightens the comments and docs a branch changes     | bash    |
 | `opencode.json`                 | Models, agents, permissions, MCP servers, providers | Windows |
-| `cli.json`                      | Theme and the TUI plugin                            | any     |
+| `cli.json`                      | Theme and the TUI plugins                           | any     |
 | `.opencode/AGENTS.md`           | Rules for sessions inside this repository           | any     |
 
 ## Reuse a Plugin or Skill
@@ -138,7 +139,7 @@ Setup, once:
 2. In Thunderbird: Tools > Add-ons and Themes > gear menu > Install Add-on From File, pick the `.xpi`, restart Thunderbird.
 3. In the add-on's options page, choose the accounts the assistant may read, turn off every tool that writes, and keep **Block skipReview** on.
 
-Use: connect `commonpost-mail` in `/mcps` and pick a local model. While it is connected, the agent list offers only `mail`, and new sessions start in it; disconnecting it brings back `build` and `plan`. A session already open keeps its agent.
+Use: connect `commonpost-mail` in `/mcps` and pick a local model. While it is connected, the agent list offers only `mail`, and new sessions start in it; disconnecting it brings back `build` and `plan`. A session already open keeps its agent. [`tui-plugins/agent-refresh`](./tui-plugins/agent-refresh/tui.js) makes the TUI pick up the switch without a restart.
 
 [`plugins/local-only-mail.js`](./plugins/local-only-mail.js) keeps the mail local:
 
