@@ -11,12 +11,18 @@
 // per-request tool list cannot strip. Which agents may call which mail tools is up to the
 // permissions in opencode.json; this plugin only decides where the data may go.
 //
+// While the server is connected, the agent list offers only `mail`, which new sessions then
+// start in; otherwise it offers `build` and `plan` but not `mail`. Hidden agents only leave
+// the list: a session already on one keeps running it, under the same rules as before.
+//
 // Install: drop this file into ~/.config/opencode/plugins/ and restart. The loader reads
 // only the default export, `{ id, setup }`.
 
 const server = 'commonpost-mail';
 
 const mailAgent = 'mail';
+
+const codingAgents = ['build', 'plan'];
 
 const localProviders = [
     'llama.cpp@',
@@ -52,7 +58,27 @@ export default {
             }
         };
 
+        const isConnected = async () => {
+            const servers = await ctx.mcp.list().then(result => result.data, () => []);
+            return servers.some(entry => entry.name === server && entry.status?.status === 'connected');
+        };
+
+        let connected = await isConnected();
+
         const registrations = [
+            // Without the mail agent, hiding the others would leave no agent to pick.
+            await ctx.agent.transform(editor => {
+                const hidden = connected && editor.get(mailAgent) ? codingAgents : [mailAgent];
+
+                for (const id of hidden) {
+                    if (editor.get(id)) {
+                        editor.update(id, agent => {
+                            agent.hidden = true;
+                        });
+                    }
+                }
+            }),
+
             await ctx.session.hook('context', async event => {
                 providers.set(event.sessionID, event.model.providerID);
 
@@ -112,7 +138,32 @@ export default {
             }),
         ];
 
+        // The event names only the server; the list call reads this location's status of it.
+        const controller = new AbortController();
+
+        const listen = async () => {
+            try {
+                for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+                    if (event?.type !== 'mcp.status.changed' || event.data?.server !== server) {
+                        continue;
+                    }
+
+                    const now = await isConnected();
+
+                    if (now !== connected) {
+                        connected = now;
+                        await ctx.agent.reload();
+                    }
+                }
+            } catch {
+                // A dropped subscription keeps the agent list it last set.
+            }
+        };
+
+        listen();
+
         return async () => {
+            controller.abort();
             await Promise.allSettled(registrations.map(registration => registration.dispose()));
             providers.clear();
         };

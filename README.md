@@ -138,7 +138,7 @@ Setup, once:
 2. In Thunderbird: Tools > Add-ons and Themes > gear menu > Install Add-on From File, pick the `.xpi`, restart Thunderbird.
 3. In the add-on's options page, choose the accounts the assistant may read, turn off every tool that writes, and keep **Block skipReview** on.
 
-Use: connect `commonpost-mail` in `/mcps`, switch to the `mail` agent (Tab) and pick a local model.
+Use: connect `commonpost-mail` in `/mcps` and pick a local model. While it is connected, the agent list offers only `mail`, and new sessions start in it; disconnecting it brings back `build` and `plan`. A session already open keeps its agent.
 
 [`plugins/local-only-mail.js`](./plugins/local-only-mail.js) keeps the mail local:
 
