@@ -5,7 +5,6 @@
 !.gitattributes
 !LICENSE
 !README.md
-!MIGRATION.md
 !opencode.json
 !cli.json
 !ai_opencode.sublime-project

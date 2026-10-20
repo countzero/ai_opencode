@@ -13,7 +13,6 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
 | `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
-| `scripts/migrate.ps1`           | Moves a machine from OpenCode 1.x to 2.0            | Windows |
 | `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
 | `tui-plugins/agent-refresh/`    | Refreshes the agent list after a plugin reload      | any     |
 | `.opencode/skills/plan-review/` | Second-pass design review of a plan                 | any     |
@@ -26,7 +25,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 
 Every plugin states how to install it in its header comment. A skill directory goes into `~/.config/opencode/skills/` to load in every project, or into a project's `.opencode/skills/` to load only there; here the skills sit in `.opencode/skills/`, so they load only when OpenCode runs inside this directory.
 
-The plugins are tested against OpenCode 2.1.0, which `"update": "disable"` keeps in place; a newer 2.x release can break them. A machine still on 1.x follows [`MIGRATION.md`](./MIGRATION.md).
+The plugins are tested against OpenCode 2.1.0, which `"update": "disable"` keeps in place; a newer 2.x release can break them.
 
 ## Install the Whole Configuration
 
