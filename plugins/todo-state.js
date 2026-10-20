@@ -4,7 +4,6 @@
 //
 //   https://github.com/anomalyco/opencode/issues/41359  (list goes stale mid-task)
 //   https://github.com/anomalyco/opencode/issues/27560  (items never marked completed)
-//   https://github.com/anomalyco/opencode/pull/56947    (2.1.0: todowrite back behind a flag)
 //
 // It also lowers the tool's threshold for a list from three steps to two, a local convention
 // that stays when the rest goes.
