@@ -10,11 +10,6 @@ this file lives in `.opencode/` and `.opencode/opencode.json` names it under
 Commit only when explicitly asked, push only when explicitly asked, and "commit"
 does not imply "push". No `Co-Authored-By` trailer.
 
-## Task Tracking
-
-Work of more than one step keeps the todo tool current, one item in progress and
-each ticked off as it finishes, so a human can follow along.
-
 ## Browser Slots
 
 Every OpenCode window drives its own Chrome profile, and `CHROME_SLOT`, set by

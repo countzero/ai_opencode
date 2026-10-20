@@ -1,10 +1,13 @@
 // Re-states a session's todo list on every step. OpenCode leaves the list where the last
 // todowrite call put it, which drifts arbitrarily far back in a long turn; this puts it back
-// in view. Delete once upstream lands a fix:
+// in view. Delete this part once upstream lands a fix:
 //
 //   https://github.com/anomalyco/opencode/issues/41359  (list goes stale mid-task)
 //   https://github.com/anomalyco/opencode/issues/27560  (items never marked completed)
 //   https://github.com/anomalyco/opencode/pull/56947    (2.1.0: todowrite back behind a flag)
+//
+// It also lowers the tool's threshold for a list from three steps to two, a local convention
+// that stays when the rest goes.
 //
 // Needs `"experimental": { "todo": true }` in opencode.json; without the tool it does nothing.
 //
@@ -26,6 +29,10 @@ const openStatuses = new Set([
     'pending',
     'in_progress',
 ]);
+
+// Appended rather than replacing the built-in "3 or more distinct steps", so a rewording
+// upstream cannot silently drop it.
+const convention = 'Todo convention (local plugin): any task of more than one step gets a list before work starts. This overrides the step threshold above.';
 
 const storageKey = sessionID => `todos/${sessionID}`;
 
@@ -79,6 +86,10 @@ export default {
 
     setup: async ctx => {
         const registrations = [
+            await ctx.tool.transform(editor => editor.update(tool, info => {
+                info.description = `${info.description}\n\n${convention}`;
+            })),
+
             // Must never throw: a rejection here is a defect, not a tool error.
             await ctx.tool.hook('execute.after', async event => {
                 if (event.tool !== tool || event.status !== 'completed') {

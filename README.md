@@ -8,7 +8,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 
 | Path                            | What it does                                        | Runs on |
 | ------------------------------- | --------------------------------------------------- | ------- |
-| `plugins/todo-state.js`         | Re-states the open todo list on every step          | any     |
+| `plugins/todo-state.js`         | Keeps a todo list for multi-step work in view       | any     |
 | `plugins/llama-limits.js`       | Fills llama-server and Strata providers             | any     |
 | `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
 | `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
