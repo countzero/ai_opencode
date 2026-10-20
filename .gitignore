@@ -5,6 +5,7 @@
 !.gitattributes
 !LICENSE
 !README.md
+!CHANGELOG.md
 !opencode.json
 !cli.json
 !ai_opencode.sublime-project
@@ -16,6 +17,8 @@
 !tui-plugins/*/*.js
 !scripts/
 !scripts/*.ps1
+!docs/
+!docs/*.md
 
 !.opencode/
 !.opencode/AGENTS.md

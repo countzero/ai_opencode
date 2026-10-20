@@ -10,6 +10,10 @@ this file lives in `.opencode/` and `.opencode/opencode.json` names it under
 Commit only when explicitly asked, push only when explicitly asked, and "commit"
 does not imply "push". No `Co-Authored-By` trailer.
 
+Semantic Versioning; the changelog follows Common Changelog and is written only
+in a release's own commit. Read `docs/releases.md` when cutting, publishing or
+verifying a release.
+
 ## Browser Slots
 
 Every OpenCode window drives its own Chrome profile, and `CHROME_SLOT`, set by
