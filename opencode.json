@@ -128,14 +128,17 @@
             },
 
             "blender": {
-                // Starts without Blender; tools reach it once the add-on's server runs (N-panel).
+                // Blender's own MCP (projects.blender.org/lab/blender_mcp), not the third-party
+                // mcp-for-blender: it inspects .blend files (missing files, linked libraries),
+                // searches the API docs and manual offline, sends no telemetry and has no paid
+                // tier. mcp-for-blender only adds asset imports and AI-generated models.
+                // Starts without Blender; tools reach it once Blender runs the "MCP" extension,
+                // which starts its server itself.
                 "type": "local",
-                // mcp-for-blender 2.1.3 in the conda env "blender-mcp". To upgrade, run
-                // pip install mcp-for-blender==<version> there, then rerun install-addon.
-                "command": ["C:\\Miniconda\\envs\\blender-mcp\\Scripts\\mcp-for-blender.exe"],
-                "environment": {
-                    "DISABLE_TELEMETRY": "true"
-                }
+                // blmcp 1.0.3 in the conda env "blender-mcp", installed from D:\Arbeit\blender_mcp\mcp.
+                // To upgrade, git pull there, pip install it into the env again, and update the
+                // extension in Blender (Preferences, Get Extensions) to the same version.
+                "command": ["C:\\Miniconda\\envs\\blender-mcp\\python.exe", "-m", "blmcp"]
             },
 
             // Thunderbird mail through the Commonpost MCP add-on 0.17.3 (bridge 0.17.1), for the
