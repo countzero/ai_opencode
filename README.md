@@ -76,10 +76,11 @@ By default all OpenCode windows share one background service, and its MCP server
 
 ### 5. Add the launcher
 
-Add this function to the PowerShell profile (`$PROFILE.CurrentUserAllHosts`), so `opencode` runs through the launcher that claims a Chrome slot:
+Add these lines to the PowerShell profile (`$PROFILE.CurrentUserAllHosts`), so `opencode` runs through the launcher that claims a Chrome slot, and `oc` is short for it:
 
 ```PowerShell
 function opencode { & "$HOME\.config\opencode\scripts\opencode.ps1" @args }
+Set-Alias -Name oc -Value opencode -Option AllScope
 ```
 
 ### 6. Install the plugin
