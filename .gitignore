@@ -8,7 +8,7 @@
 !MIGRATION.md
 !opencode.json
 !cli.json
-!opencode_config.sublime-project
+!ai_opencode.sublime-project
 
 !plugins/
 !plugins/*.js

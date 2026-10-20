@@ -1,6 +1,6 @@
 # OpenCode Configuration
 
-[![Last commit](https://img.shields.io/github/last-commit/countzero/opencode_config)](https://github.com/countzero/opencode_config/commits/main) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Sponsors](https://img.shields.io/github/sponsors/countzero?label=Sponsor&logo=GitHub)](https://github.com/sponsors/countzero) [![Ko-fi](https://img.shields.io/badge/Ko--fi-Tip-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/finnkumkar)
+[![Last commit](https://img.shields.io/github/last-commit/countzero/ai_opencode)](https://github.com/countzero/ai_opencode/commits/main) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Sponsors](https://img.shields.io/github/sponsors/countzero?label=Sponsor&logo=GitHub)](https://github.com/sponsors/countzero) [![Ko-fi](https://img.shields.io/badge/Ko--fi-Tip-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/finnkumkar)
 
 My global configuration for [OpenCode](https://opencode.ai) on Windows, published so others can take single plugins and skills. The repository is the `~/.config/opencode` directory itself, so OpenCode reads it in place.
 
@@ -47,7 +47,7 @@ Move an existing configuration aside, then clone the repository into its place:
 
 ```PowerShell
 Rename-Item "$HOME\.config\opencode" "opencode.backup" -ErrorAction SilentlyContinue
-git clone https://github.com/countzero/opencode_config.git "$HOME\.config\opencode"
+git clone https://github.com/countzero/ai_opencode.git "$HOME\.config\opencode"
 ```
 
 ### 3. Add the secrets
