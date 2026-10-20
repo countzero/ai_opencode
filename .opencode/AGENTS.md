@@ -12,8 +12,8 @@ does not imply "push". No `Co-Authored-By` trailer.
 
 ## Task Tracking
 
-Work of more than one step states its steps up front and reports each as it
-finishes, so a human can follow along.
+Work of more than one step keeps the todo tool current, one item in progress and
+each ticked off as it finishes, so a human can follow along.
 
 ## Browser Slots
 

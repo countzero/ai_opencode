@@ -28,7 +28,7 @@ const rules = [
     'Background guard (local plugin):',
     '- background=true only with agent explore, for read-only research. Never for edits or the browser: this window has one Chrome profile, and parallel browser work collides on it.',
     '- Start background tasks only when the user asked for them or approved your proposal.',
-    '- When launching, tell the user in one line what started, and list each task in your reply.',
+    '- When launching, tell the user in one line what started, and track each task as a todo item.',
     '- A result that arrives while others you launched together still run gets a one-line acknowledgment at most. After the last one, give one combined report: the result, then the single next step.',
 ].join('\n');
 

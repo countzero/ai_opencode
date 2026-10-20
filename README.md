@@ -8,6 +8,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 
 | Path                            | What it does                                        | Runs on |
 | ------------------------------- | --------------------------------------------------- | ------- |
+| `plugins/todo-state.js`         | Re-states the open todo list on every step          | any     |
 | `plugins/llama-limits.js`       | Fills llama-server and Strata providers             | any     |
 | `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
 | `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
@@ -25,7 +26,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 
 Every plugin states how to install it in its header comment. A skill directory goes into `~/.config/opencode/skills/` to load in every project, or into a project's `.opencode/skills/` to load only there; here the skills sit in `.opencode/skills/`, so they load only when OpenCode runs inside this directory.
 
-The plugins are tested against OpenCode 2.0.32, which `"update": "disable"` keeps in place; a newer 2.x release can break them. A machine still on 1.x follows [`MIGRATION.md`](./MIGRATION.md).
+The plugins are tested against OpenCode 2.1.0, which `"update": "disable"` keeps in place; a newer 2.x release can break them. A machine still on 1.x follows [`MIGRATION.md`](./MIGRATION.md).
 
 ## Install the Whole Configuration
 

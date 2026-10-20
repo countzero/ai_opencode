@@ -1,6 +1,6 @@
 ---
 name: plan-review
-description: Second-pass review of a plan before presenting it to the user. Use when about to present a non-trivial plan in plan mode, or a multi-step implementation outline in build mode (a list of 3+ non-trivial steps, or a response describing edits to 2+ files). Skip for trivial or one-line changes, or when the user asked for "minimal", "quick", "just do X" or the "smallest fix". Applies ten design lenses and emits a one-line tail marker only when the pass changes the plan.
+description: Second-pass review of a plan before presenting it to the user. Use when about to present a non-trivial plan in plan mode, or a multi-step implementation outline in build mode (a todo list with 3+ non-trivial items, or a response describing edits to 2+ files). Skip for trivial or one-line changes, or when the user asked for "minimal", "quick", "just do X" or the "smallest fix". Applies ten design lenses and emits a one-line tail marker only when the pass changes the plan.
 ---
 
 # Plan Review (Second Pass)
@@ -13,7 +13,7 @@ Fire when ALL of the following hold:
 - The plan touches more than one file, introduces a new abstraction (function, class, type, module, config key, route, schema field, table, environment variable), or rewrites several sections of one artifact.
 - The user has not asked for a minimal, quick or smallest answer.
 
-Fires in plan mode AND in build mode: a multi-file edit outline, or a list of 3+ non-trivial steps, counts as a plan.
+Fires in plan mode AND in build mode: a multi-file edit outline, or a todo list with 3+ non-trivial items, counts as a plan.
 
 Skip for pure questions, file inspection, one-line fixes and mechanical edits.
 

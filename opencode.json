@@ -9,6 +9,12 @@
     // anomalyco/opencode#55010 is fixed.
     "snapshots": false,
 
+    // The experimental todowrite tool; plugins/todo-state.js keeps its list in view. The
+    // published schema does not know the key yet.
+    "experimental": {
+        "todo": true
+    },
+
     "plugins": ["opencode-claude-auth@3.0.0"],
 
     "permissions": [
