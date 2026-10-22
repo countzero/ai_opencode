@@ -135,7 +135,7 @@
                 // Starts without Blender; tools reach it once Blender runs the "MCP" extension,
                 // which starts its server itself.
                 "type": "local",
-                // blmcp 1.0.3 in the conda env "blender-mcp", installed from D:\Arbeit\blender_mcp\mcp.
+                // blmcp 1.0.2 in the conda env "blender-mcp", installed from D:\Arbeit\blender_mcp\mcp.
                 // To upgrade, git pull there, pip install it into the env again, and update the
                 // extension in Blender (Preferences, Get Extensions) to the same version.
                 "command": ["C:\\Miniconda\\envs\\blender-mcp\\python.exe", "-m", "blmcp"]
