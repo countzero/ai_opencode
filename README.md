@@ -155,7 +155,7 @@ Use: connect `commonpost-mail` in `/mcps` and pick a local model. While it is co
 
 The agent can start a subagent in the background and keep talking; its result arrives as a separate message when it finishes. **Ctrl+B** moves a running foreground subagent to the background. **Ctrl+D** on a running subagent in the composer's subagent list interrupts just that one; **Esc** interrupts the session.
 
-[`plugins/background-guard.js`](./plugins/background-guard.js) allows background tasks only for the read-only `explore` agent and at most 20 running per session; a background call for another agent or beyond the cap fails with an error that tells the agent to run it in the foreground. It also asks the agent to announce what it starts and to report once all results are in.
+[`plugins/background-guard.js`](./plugins/background-guard.js) allows background tasks only for the read-only `explore` agent and at most 20 running per session; a background call for another agent or beyond the cap fails with an error that tells the agent to run it in the foreground. It tells the agent to start background tasks unasked when the work splits into independent read-only tracks of more than a handful of tool calls each, and to work directly on small or sequential tasks. It also asks the agent to announce what it starts and to report once all results are in.
 
 > [!NOTE]
 > Browser work stays in the foreground: one OpenCode window has one Chrome profile, and parallel browser tasks would collide on it.
