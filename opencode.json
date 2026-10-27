@@ -33,8 +33,9 @@
     "agents": {
         "build": { "model": "anthropic/claude-opus-5-5#high" },
         "plan": { "model": "anthropic/claude-opus-5-5#high" },
-        "explore": { "model": "anthropic/claude-opus-5-5#low" },
-        "general": { "model": "anthropic/claude-opus-5-5#low" },
+        // explore and general are deliberately unpinned: a subagent carrying its own model keeps
+        // it after /models picks another one, so one Anthropic limit stops every delegation.
+        // Unpinned they inherit the session's model, at the price of running its variant.
 
         // Reads Thunderbird mail, calendars and contacts on a local model and changes nothing;
         // plugins/local-only-mail.js refuses any other provider. All else is denied, the web
