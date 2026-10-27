@@ -3,6 +3,12 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-10-27
+
+### Added
+
+- Start the TUI on a chosen model through `OPENCODE_MODEL`, which the launcher applies to `build` and `plan`, keeps the variant, and restores the environment after the window exits ([`1d31006`](https://github.com/countzero/ai_opencode/commit/1d31006))
+
 ## [2.0.0] - 2026-10-20
 
 _This version runs on OpenCode 2.1 only. Follow README.md → *Install the Whole Configuration* from step 1: install `@opencode/cli@2`, disable the service, add the launcher to the PowerShell profile and run `opencode plugin add opencode-claude-auth@3.0.0`. A machine on OpenCode 1.x stays on the tag `v1.19.3-final`._
@@ -24,4 +30,5 @@ _This version runs on OpenCode 2.1 only. Follow README.md → *Install the Whole
 - Add `tui-plugins/agent-refresh/`, which refreshes the agent list after a plugin reload without a restart ([`f774594`](https://github.com/countzero/ai_opencode/commit/f774594))
 - Detect Strata servers in `plugins/llama-limits.js` with their loaded model's context, image input and reasoning variants, and add the `strata@Laptop-Finn` provider ([`eb4f26d`](https://github.com/countzero/ai_opencode/commit/eb4f26d))
 
+[2.1.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.1.0
 [2.0.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.0.0
