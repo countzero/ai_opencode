@@ -19,6 +19,12 @@
 # profile function that calls this script and recurse, and the opencode.ps1 shim ends with
 # `exit`, which would skip the cleanup below.
 #
+# A launch model comes through the same environment: the v2 TUI has no --model flag, and an
+# agent's model outranks the root "model", so changing "model" alone would not reach it.
+# When OPENCODE_MODEL holds a provider/model or provider/model#variant ref, this script adds
+# a higher config-content layer that points build and plan at it; unset, the pins in
+# opencode.json decide. An OPENCODE_CONFIG_CONTENT already in the environment wins.
+#
 # Install: in the PowerShell profile,
 #
 #   function opencode { & "$HOME\.config\opencode\scripts\opencode.ps1" @args }
@@ -28,8 +34,18 @@ $slotCeiling = 1000
 
 $executable = Join-Path $env:APPDATA 'npm\opencode.cmd'
 
-# The profile function runs this in the caller's session, whose CHROME_SLOT must survive.
+$launchModelConfig = @'
+{
+  "agents": {
+    "build": { "model": "{env:OPENCODE_MODEL}" },
+    "plan":  { "model": "{env:OPENCODE_MODEL}" }
+  }
+}
+'@
+
+# The profile function runs this in the caller's session, whose environment must survive.
 $previous = $env:CHROME_SLOT
+$previousContent = $env:OPENCODE_CONFIG_CONTENT
 $pipe = $null
 $exitCode = 1
 
@@ -64,12 +80,22 @@ try {
         Write-Warning "All $slotCeiling Chrome slots are taken; chrome-devtools falls back to the shared opencode-profile-."
     }
 
+    if ($env:OPENCODE_MODEL -and -not $env:OPENCODE_CONFIG_CONTENT) {
+        $env:OPENCODE_CONFIG_CONTENT = $launchModelConfig
+    }
+
     & $executable @args
     $exitCode = $LASTEXITCODE
 } finally {
     # Also runs on Ctrl+C, which reaches OpenCode first and then stops this script.
     if ($pipe) {
         $pipe.Dispose()
+    }
+
+    if ($null -ne $previousContent) {
+        $env:OPENCODE_CONFIG_CONTENT = $previousContent
+    } else {
+        Remove-Item Env:OPENCODE_CONFIG_CONTENT -ErrorAction Ignore
     }
 
     if ($null -eq $previous) {

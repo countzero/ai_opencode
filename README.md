@@ -76,12 +76,14 @@ By default all OpenCode windows share one background service, and its MCP server
 
 ### 5. Add the launcher
 
-Add these lines to the PowerShell profile (`$PROFILE.CurrentUserAllHosts`), so `opencode` runs through the launcher that claims a Chrome slot, and `oc` is short for it:
+Add these lines to the PowerShell profile (`$PROFILE.CurrentUserAllHosts`), so `opencode` runs through the launcher that claims a Chrome slot and applies an optional launch model, and `oc` is short for it:
 
 ```PowerShell
 function opencode { & "$HOME\.config\opencode\scripts\opencode.ps1" @args }
-Set-Alias -Name oc -Value opencode -Option AllScope
+function oc { opencode @args }
 ```
+
+`oc` is a function rather than an alias because `Set-Alias` autoloads `Microsoft.PowerShell.Utility` and costs about 26 ms at startup.
 
 ### 6. Install the plugin
 
@@ -122,6 +124,20 @@ $env:CHROME_SLOT = '3'; opencode
 > The preference is honored only while the slot is free; a taken slot falls back to the lowest free one. A slot is released when its window ends, however it ends. An OpenCode started without the launcher, from `cmd` or inside an agent shell, gets no slot of its own.
 
 The mechanics are the header comments of [`scripts/opencode.ps1`](./scripts/opencode.ps1) and [`tui-plugins/slot-title/`](./tui-plugins/slot-title/).
+
+### Launch model
+
+The v2 full-screen TUI has no `--model` flag, and an agent's `model` outranks the root `model`, so changing the root key alone would not reach the TUI; `opencode.json` pins `build` and `plan`. To start a window on another model, set `OPENCODE_MODEL` to a `provider/model` or `provider/model#variant` reference before `oc`:
+
+```PowerShell
+$env:OPENCODE_MODEL = 'openrouter/deepseek/deepseek-v4.1-flash-1017#max'
+oc
+```
+
+The launcher turns that into a higher-priority `OPENCODE_CONFIG_CONTENT` layer for `build` and `plan`; unset, the pins decide. When set, the `#variant` suffix is kept. The route needs the private server from step 4: with the shared service running, the server does not see the window's environment. It applies to the whole process tree, so subagents inherit the model unless they pin one; `mail` keeps its local model. A variant already remembered in `model.json` wins over the one in the reference. An explicit `OPENCODE_CONFIG_CONTENT` wins over the launcher's template.
+
+> [!NOTE]
+> `OPENCODE_CONFIG_CONTENT` is undocumented in OpenCode 2.1 and may change; re-check the launch model after an OpenCode upgrade. The hook lives in [`scripts/opencode.ps1`](./scripts/opencode.ps1), so starting `opencode.exe` directly bypasses it. The launcher does not check the reference against the model list.
 
 ### Local models
 
