@@ -141,7 +141,7 @@ The launcher turns that into a higher-priority `OPENCODE_CONFIG_CONTENT` layer f
 
 ### Local models
 
-A `llama.cpp@…` or `strata@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each llama-server router for the models of its preset file, and each [Strata](https://github.com/Niko1221/Strata) server (renamed Basalt; the provider key stays `strata@…`) for its loaded model, and adds them with their context limit and input modalities. Such a model also gets the reasoning variants `none`, `low`, `medium` and `high`, and an output limit of 32,000 tokens, because the server refuses a request whose prompt plus output passes the context. A server that does not answer within a second shows no models.
+A `llama.cpp@…`, `strata@…` or `basalt@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each llama-server router for the models of its preset file, and each [Strata](https://github.com/Niko1221/Strata) server (renamed Basalt, which listens one port up) for its loaded model, and adds them with their context limit and input modalities. Such a model also gets the reasoning variants `none`, `low`, `medium` and `high`, and an output limit of 32,000 tokens, because the server refuses a request whose prompt plus output passes the context. A server that does not answer within a second shows no models.
 
 > [!NOTE]
 > The list is read at startup: after starting a server or editing a preset, restart OpenCode. `opencode run` checks its model before the list arrives and reports "Model unavailable"; the TUI is not affected.
@@ -160,7 +160,7 @@ Use: connect `commonpost-mail` in `/mcps` and pick a local model. While it is co
 
 [`plugins/local-only-mail.js`](./plugins/local-only-mail.js) keeps the mail local:
 
-* The mail tools exist only in the `mail` agent, and only for a `llama.cpp@…` or `strata@…` model; the agent refuses to run on any other.
+* The mail tools exist only in the `mail` agent, and only for a `llama.cpp@…`, `strata@…` or `basalt@…` model; the agent refuses to run on any other.
 * A session that has touched mail never sends its history elsewhere: switching it to another agent on a cloud model, or compacting it there, fails with an error that says why. Its title is set without a model. Forks and subagent sessions started from it inherit this.
 * `saveAttachments` is refused, so reading a message writes no files.
 

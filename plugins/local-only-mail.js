@@ -31,6 +31,7 @@ const codingAgents = ['build', 'plan'];
 const localProviders = [
     'llama.cpp@',
     'strata@',
+    'basalt@',
 ];
 
 const isLocal = providerID => localProviders.some(prefix => String(providerID ?? '').startsWith(prefix));

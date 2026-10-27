@@ -163,7 +163,8 @@
     },
 
     // The models of a llama.cpp provider come from its server's presets, those of a Strata
-    // provider from its loaded model (plugins/llama-limits.js).
+    // or Basalt provider from its loaded model (plugins/llama-limits.js). Basalt is Strata's
+    // new name and listens one port up.
     "provider": {
 
         "llama.cpp@PC-Finn": {
@@ -195,6 +196,14 @@
             "name": "strata@Laptop-Finn",
             "options": {
                 "baseURL": "http://laptop-finn:8083/v1"
+            }
+        },
+
+        "basalt@Laptop-Finn": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "basalt@Laptop-Finn",
+            "options": {
+                "baseURL": "http://laptop-finn:8084/v1"
             }
         }
     }
