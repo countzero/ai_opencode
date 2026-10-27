@@ -1,7 +1,8 @@
 // Guards OpenCode's background subagents (the subagent tool's background=true).
 // They run unwatched: a looping one burns tokens until someone notices
 // (https://github.com/anomalyco/opencode/issues/45442). This refuses background tasks for
-// any agent but explore, caps the running ones per parent session, and adds usage rules to
+// any agent but explore and the two pr-audit workers, caps concurrency per parent session,
+// and adds usage rules to
 // the subagent tool's description.
 //
 // Install: drop this file into a plugins/ directory under an OpenCode config root and
@@ -16,6 +17,8 @@ const maxRunning = 20;
 
 const allowedAgents = new Set([
     'explore',
+    'pr-audit-reviewer',
+    'pr-audit-verifier',
 ]);
 
 // A call whose execute.after never fires would hold a slot forever.
@@ -26,7 +29,7 @@ const runningTtlMs = 60 * 60_000;
 
 const rules = [
     'Background guard (local plugin):',
-    '- background=true only with agent explore, for read-only research. Never for edits or the browser: this window has one Chrome profile, and parallel browser work collides on it.',
+    '- background=true only with agent explore, for read-only research, or with pr-audit-reviewer and pr-audit-verifier, whose only write is one file under .tmp/. Never for edits or the browser: this window has one Chrome profile, and parallel browser work collides on it.',
     '- Default to background explore tasks without asking when the work splits into two or more independent read-only tracks that each need more than a handful of tool calls (web fact checks, exploring separate areas). Work directly on small, sequential or single-file tasks.',
     '- When launching, tell the user in one line what started, and track each task as a todo item.',
     '- A result that arrives while others you launched together still run gets a one-line acknowledgment at most. After the last one, give one combined report: the result, then the single next step.',
