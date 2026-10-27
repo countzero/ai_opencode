@@ -22,10 +22,10 @@
 // Only router entries from a preset file are listed (`source: "preset"`): --models-dir adds
 // every GGUF in the directory, most of them without a tuned preset.
 //
-// A server without presets may be Strata (github.com/Niko1221/Strata), whose /health says
-// `"service": "strata"`. Its /v1/models lists the loaded model with `meta.n_ctx` and its input
-// modalities, plus one entry per alias (`alias_of`), which is skipped. Strata also takes
-// `reasoning_effort`, offered as the variants none, low, medium and high.
+// A server without presets may be Strata (github.com/Niko1221/Strata, now Basalt). Its
+// /v1/models lists the loaded model with `meta.n_ctx` and its input modalities, plus one entry
+// per alias (`alias_of`), which is skipped. It also takes `reasoning_effort`, offered as the
+// variants none, low, medium and high; /health's `max_context` covers a restarting engine.
 //
 // Install: drop this file into ~/.config/opencode/plugins/ and restart. The loader reads
 // only the default export, `{ id, setup }`.
@@ -144,13 +144,9 @@ const fetchJSON = async (href, apiKey) => {
     return response.json();
 };
 
-/** Strata serves /health beside /v1, without auth. */
+/** Strata, now Basalt, serves /health beside /v1, without auth. */
 const strataModels = async ({ baseURL, apiKey }, entries) => {
     const health = await fetchJSON(`${trimmed(baseURL).replace(/\/v1$/, '')}/health`, apiKey);
-
-    if (health?.service !== 'strata') {
-        return [];
-    }
 
     return entries
         .filter(entry => !entry.alias_of && (entry.architecture?.output_modalities ?? ['text']).includes('text'))

@@ -9,7 +9,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | Path                            | What it does                                        | Runs on |
 | ------------------------------- | --------------------------------------------------- | ------- |
 | `plugins/todo-state.js`         | Keeps a todo list for multi-step work in view       | any     |
-| `plugins/llama-limits.js`       | Fills llama-server and Strata providers             | any     |
+| `plugins/llama-limits.js`       | Fills llama-server and Strata/Basalt providers      | any     |
 | `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
 | `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
@@ -125,7 +125,7 @@ The mechanics are the header comments of [`scripts/opencode.ps1`](./scripts/open
 
 ### Local models
 
-A `llama.cpp@…` or `strata@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each llama-server router for the models of its preset file, and each [Strata](https://github.com/Niko1221/Strata) server for its loaded model, and adds them with their context limit and input modalities. A Strata model also gets the reasoning variants `none`, `low`, `medium` and `high`, and an output limit of 32,000 tokens, because Strata refuses a request whose prompt plus output passes the context. A server that does not answer within a second shows no models.
+A `llama.cpp@…` or `strata@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each llama-server router for the models of its preset file, and each [Strata](https://github.com/Niko1221/Strata) server (renamed Basalt; the provider key stays `strata@…`) for its loaded model, and adds them with their context limit and input modalities. Such a model also gets the reasoning variants `none`, `low`, `medium` and `high`, and an output limit of 32,000 tokens, because the server refuses a request whose prompt plus output passes the context. A server that does not answer within a second shows no models.
 
 > [!NOTE]
 > The list is read at startup: after starting a server or editing a preset, restart OpenCode. `opencode run` checks its model before the list arrives and reports "Model unavailable"; the TUI is not affected.
