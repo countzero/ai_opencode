@@ -9,6 +9,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add the `basalt@Laptop-Finn` provider for the renamed Strata server, Basalt, on port 8084, and let `plugins/local-only-mail.js` treat `basalt@…` as local
 
+### Fixed
+
+- Pin the `mail` agent to `basalt@Laptop-Finn`, since `strata@Laptop-Finn` no longer serves its model and the agent fell back to the default Opus
+
 ## [2.1.0] - 2026-10-27
 
 ### Added

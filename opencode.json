@@ -44,7 +44,7 @@
         "mail": {
             "description": "Reads Thunderbird mail on a local model, read-only",
             "mode": "primary",
-            "model": "strata@Laptop-Finn/qwen3.8-flash-next-unsloth-ud-iq4_xs",
+            "model": "basalt@Laptop-Finn/qwen3.8-flash-next-unsloth-ud-iq4_xs",
             "permissions": [
                 { "action": "*", "resource": "*", "effect": "deny" },
                 { "action": "read", "resource": "*", "effect": "allow" },
