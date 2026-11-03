@@ -3,7 +3,7 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.1] - 2026-11-03
 
 ### Added
 
@@ -12,6 +12,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Pin the `mail` agent to `basalt@Laptop-Finn`, since `strata@Laptop-Finn` no longer serves its model and the agent fell back to the default Opus
+- Drop the todo re-statement in `plugins/todo-state.js`, which evicted the prompt cache on every turn under OpenCode 2 and tripled the weekly Anthropic quota for the same work ([`9d26c62`](https://github.com/countzero/ai_opencode/commit/9d26c62))
 
 ## [2.1.0] - 2026-10-27
 
