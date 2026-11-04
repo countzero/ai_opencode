@@ -3,6 +3,12 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-04
+
+### Added
+
+- Restate a todo list that has gone four steps without an update in `plugins/todo-state.js`, as a session instruction entry that OpenCode keeps in the history as a system message, so the list stays in view on Anthropic, OpenRouter and the local servers without costing the prompt cache; each reminder shows as an "Instructions updated: api/todo" notice ([`209d1f3`](https://github.com/countzero/ai_opencode/commit/209d1f3))
+
 ## [2.1.1] - 2026-11-03
 
 ### Added
