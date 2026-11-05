@@ -163,8 +163,8 @@
     },
 
     // The models of a llama.cpp provider come from its server's presets, those of a Strata
-    // or Basalt provider from its loaded model (plugins/llama-limits.js). Basalt is Strata's
-    // new name and listens one port up.
+    // or Basalt provider from its loaded model (plugins/llama-limits.js). Basalt, a Strata
+    // fork for NVIDIA Blackwell, listens one port up.
     "provider": {
 
         "llama.cpp@PC-Finn": {

@@ -141,7 +141,7 @@ The launcher turns that into a higher-priority `OPENCODE_CONFIG_CONTENT` layer f
 
 ### Local models
 
-A `llama.cpp@…`, `strata@…` or `basalt@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each llama-server router for the models of its preset file, and each [Strata](https://github.com/Niko1221/Strata) server (renamed Basalt, which listens one port up) for its loaded model, and adds them with their context limit and input modalities. Such a model also gets the reasoning variants `none`, `low`, `medium` and `high`, and an output limit of 32,000 tokens, because the server refuses a request whose prompt plus output passes the context. A server that does not answer within a second shows no models.
+A `llama.cpp@…`, `strata@…` or `basalt@…` provider in `opencode.json` carries only its `baseURL`. At startup, [`plugins/llama-limits.js`](./plugins/llama-limits.js) asks each llama-server router for the models of its preset file, and each [Strata](https://github.com/Niko1221/Strata) or [Basalt](https://github.com/jesdga95/basalt) server (a Strata fork for NVIDIA Blackwell, which listens one port up) for its loaded model, and adds them with their context limit and input modalities. Such a model also gets the reasoning variants `none`, `low`, `medium` and `high`, and an output limit of 32,000 tokens, because the server refuses a request whose prompt plus output passes the context. A server that does not answer within a second shows no models.
 
 > [!NOTE]
 > The list is read at startup: after starting a server or editing a preset, restart OpenCode. `opencode run` checks its model before the list arrives and reports "Model unavailable"; the TUI is not affected.
