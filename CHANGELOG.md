@@ -3,6 +3,20 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-11-05
+
+### Changed
+
+- Delegate research, web lookups, fact checks, reviews and the exploration of separate areas to parallel background `explore` agents without being asked, through a policy in the system prompt of `build` and `plan` from `plugins/background-guard.js` that sizes the number to the task, and cap a session on a local model at 3 background agents, since Basalt answers one request at a time and keeps 4 conversations in RAM ([`7b15948`](https://github.com/countzero/ai_opencode/commit/7b15948))
+
+### Added
+
+- Ask for a todo list in `plugins/todo-state.js` when a `build` or `plan` turn reaches two tool steps without one, and tell `plan` that the list is session state, not a plan file, since Plan mode wrote one in only 23 of 65 multi-step turns ([`f64f707`](https://github.com/countzero/ai_opencode/commit/f64f707))
+
+### Fixed
+
+- Describe Basalt as a Strata fork for NVIDIA Blackwell rather than Strata's new name in `README.md`, `opencode.json` and `plugins/llama-limits.js` ([`ea747f8`](https://github.com/countzero/ai_opencode/commit/ea747f8))
+
 ## [2.2.0] - 2026-11-04
 
 ### Added
