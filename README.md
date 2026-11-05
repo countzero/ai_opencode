@@ -10,7 +10,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | ------------------------------- | --------------------------------------------------- | ------- |
 | `plugins/todo-state.js`         | Keeps a todo list for multi-step work in view       | any     |
 | `plugins/llama-limits.js`       | Fills llama-server and Strata/Basalt providers      | any     |
-| `plugins/background-guard.js`   | Limits background subagents to capped explore tasks | any     |
+| `plugins/background-guard.js`   | Delegates research to capped background subagents   | any     |
 | `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
 | `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
@@ -171,7 +171,9 @@ Use: connect `commonpost-mail` in `/mcps` and pick a local model. While it is co
 
 The agent can start a subagent in the background and keep talking; its result arrives as a separate message when it finishes. **Ctrl+B** moves a running foreground subagent to the background. **Ctrl+D** on a running subagent in the composer's subagent list interrupts just that one; **Esc** interrupts the session.
 
-[`plugins/background-guard.js`](./plugins/background-guard.js) allows background tasks only for the read-only `explore` agent and at most 20 running per session; a background call for another agent or beyond the cap fails with an error that tells the agent to run it in the foreground. It tells the agent to start background tasks unasked when the work splits into independent read-only tracks of more than a handful of tool calls each, and to work directly on small or sequential tasks. It also asks the agent to announce what it starts and to report once all results are in.
+[`plugins/background-guard.js`](./plugins/background-guard.js) allows background tasks only for the read-only `explore` agent and the two pr-audit workers, at most 20 running per session; a background call for another agent or beyond the cap fails with an error that tells the agent to run it in the foreground. It also asks the agent to announce what it starts and to report once all results are in.
+
+`build` and `plan` get a delegation policy in their system prompt: research, web lookups, fact checks, reviews and the exploration of separate areas go to background `explore` agents without being asked, one per independent track, sized to the task (none for a simple fact, two to four for a comparison, five or more for broad research), with every factual claim marked VERIFIED, NOT FOUND or CONTRADICTED. Edits, sequential work and small tasks stay in the session. On a local model (`llama.cpp@…`, `strata@…`, `basalt@…`) the cap is 3: Basalt answers one request at a time and keeps 4 conversations in RAM (ai_basalt's preset), and llama-server runs 4 slots by default; the session holds one of them.
 
 > [!NOTE]
 > Browser work stays in the foreground: one OpenCode window has one Chrome profile, and parallel browser tasks would collide on it.
