@@ -33,6 +33,13 @@
 // OpenCode states as "no longer applies". So is a list with nothing open. Before a compaction
 // the current list is written once more, so it survives the summary.
 //
+// A list never written gets no reminder, and Plan mode skipped it most: in turns of three or
+// more tool steps, build wrote one in 69 of 101 and plan in 23 of 65 (2026-11-02 to 05),
+// likely because Plan mode's reminder forbids modifying files. So plan gets a fixed system line
+// saying the list is no file, and a build or plan turn that reaches `askSteps` steps without a
+// list gets a one-time `todo-start` entry asking for one. The entry is withdrawn once a list is
+// written, or at the next prompt.
+//
 // Needs `"experimental": { "todo": true }` in opencode.json; without the tool it does nothing.
 //
 // Install: drop this file into ~/.config/opencode/plugins/ and restart. The loader reads
@@ -45,6 +52,18 @@ const staleSteps = 4;
 
 const entryKey = 'todo';
 
+const askKey = 'todo-start';
+
+// Model steps with tool calls but no list yet before one is asked for. The convention wants the
+// list before work starts; one step is left for reading into the task.
+const askSteps = 2;
+
+// The tool hooks do not name the agent, so the context hook records it per session.
+const primaryAgents = new Set([
+    'build',
+    'plan',
+]);
+
 const openStatuses = new Set([
     'pending',
     'in_progress',
@@ -53,6 +72,12 @@ const openStatuses = new Set([
 // Appended rather than replacing the built-in "3 or more distinct steps", so a rewording
 // upstream cannot silently drop it.
 const convention = 'Todo convention (local plugin): any task of more than one step gets a list before work starts. This overrides the step threshold above.';
+
+// Fixed text, so every request of a plan session starts the same and the prompt cache holds.
+const planNote = 'Todo convention (local plugin): a task of more than one step gets a list before work starts, in Plan mode too. The todo list is session state, not a plan file, and reading, research and drafting the plan are steps.';
+
+// The reminder number keeps every request distinct, as with the restated list below.
+const askText = reminders => `No todo list yet after ${askSteps} steps (todo-state plugin, reminder ${reminders}). The todo convention requires one for any task of more than one step, before work starts, in Plan mode too: write it with todowrite now. A task that really is a single step needs none.`;
 
 const storageKey = sessionID => `todos/${sessionID}`;
 
@@ -75,6 +100,7 @@ export default {
     setup: async ctx => {
         const entries = ctx.session.instructions?.entry;
         const sessions = new Map();
+        const agents = new Map();
         // IDs of running Code Mode `execute` calls: a tool called inside one shares its ID, and
         // its result goes back to the script, not to the model.
         const executing = new Set();
@@ -90,6 +116,9 @@ export default {
                     prompts: stored?.prompts ?? 0,
                     reminders: stored?.reminders ?? 0,
                     entry: stored?.entry === true,
+                    asked: stored?.asked === true,
+                    // A list written in this turn, even one since finished, rules the request out.
+                    listed: false,
                     steps: 0,
                     seen: new Set(),
                 });
@@ -99,7 +128,7 @@ export default {
         };
 
         const save = async (sessionID, state) => {
-            if (state.open.length === 0 && !state.entry) {
+            if (state.open.length === 0 && !state.entry && !state.asked) {
                 await ctx.storage.remove(storageKey(sessionID));
 
                 return;
@@ -110,6 +139,7 @@ export default {
                 prompts: state.prompts,
                 reminders: state.reminders,
                 entry: state.entry,
+                asked: state.asked,
             });
         };
 
@@ -128,10 +158,32 @@ export default {
             }
         };
 
+        const askForList = async (sessionID, state) => {
+            state.reminders += 1;
+            await entries.put({ sessionID, key: askKey, value: askText(state.reminders) });
+            state.asked = true;
+            await save(sessionID, state);
+        };
+
+        const withdrawAsk = async (sessionID, state) => {
+            if (state.asked) {
+                await entries.remove({ sessionID, key: askKey });
+                state.asked = false;
+            }
+        };
+
         const registrations = [
             await ctx.tool.transform(editor => editor.update(tool, info => {
                 info.description = `${info.description}\n\n${convention}`;
             })),
+
+            await ctx.session.hook('context', event => {
+                agents.set(event.sessionID, event.agent);
+
+                if (event.agent === 'plan') {
+                    event.system.push({ type: 'text', text: planNote });
+                }
+            }),
         ];
 
         if (entries === undefined) {
@@ -165,6 +217,8 @@ export default {
                             state.prompts = 0;
                             state.steps = 0;
                             state.seen = new Set();
+                            state.listed = true;
+                            await withdrawAsk(event.sessionID, state);
 
                             if (state.open.length === 0) {
                                 await withdraw(event.sessionID, state);
@@ -175,7 +229,21 @@ export default {
                             return;
                         }
 
-                        if (state.open.length === 0 || state.seen.has(event.messageID)) {
+                        if (state.seen.has(event.messageID)) {
+                            return;
+                        }
+
+                        if (state.open.length === 0) {
+                            if (state.listed || state.asked || !primaryAgents.has(agents.get(event.sessionID))) {
+                                return;
+                            }
+
+                            state.seen.add(event.messageID);
+
+                            if (state.seen.size >= askSteps) {
+                                await askForList(event.sessionID, state);
+                            }
+
                             return;
                         }
 
@@ -193,8 +261,16 @@ export default {
                 await ctx.session.hook('prompt', async event => {
                     try {
                         const state = await load(event.sessionID);
+                        state.listed = false;
+
+                        if (state.asked) {
+                            await withdrawAsk(event.sessionID, state);
+                            await save(event.sessionID, state);
+                        }
 
                         if (state.open.length === 0) {
+                            state.seen = new Set();
+
                             return;
                         }
 
