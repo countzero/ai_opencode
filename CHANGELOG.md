@@ -68,5 +68,8 @@ _This version runs on OpenCode 2.1 only. Follow README.md → *Install the Whole
 - Detect Strata servers in `plugins/llama-limits.js` with their loaded model's context, image input and reasoning variants, and add the `strata@Laptop-Finn` provider ([`eb4f26d`](https://github.com/countzero/ai_opencode/commit/eb4f26d))
 
 [2.3.1]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.1
+[2.3.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.0
+[2.2.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.2.0
+[2.1.1]: https://github.com/countzero/ai_opencode/releases/tag/v2.1.1
 [2.1.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.1.0
 [2.0.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.0.0
