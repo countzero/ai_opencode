@@ -11,8 +11,14 @@
 
     // The experimental todowrite tool; plugins/todo-state.js keeps its list in view. The
     // published schema does not know the key yet.
+    //
+    // A directory idle for 60 minutes is unloaded by default, which stops its MCP servers;
+    // chrome-devtools-mcp then closes the Chromium it launched, and the window vanishes
+    // while its tabs are still wanted. false keeps every loaded directory, its MCP servers
+    // and its browser until OpenCode quits, at the memory of the idle ones.
     "experimental": {
-        "todo": true
+        "todo": true,
+        "location_idle_timeout": false
     },
 
     "plugins": ["opencode-claude-auth@3.0.0"],
