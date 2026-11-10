@@ -3,6 +3,12 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-11-10
+
+### Added
+
+- Show a slot's `chrome-devtools` Chromium window when it starts hidden, through `plugins/show-chromium.js` and `scripts/show-chromium.ps1`, after a session's first `chrome-devtools` call and every `new_page`, without taking the focus: Puppeteer launches Chromium with `windowsHide: true`, and after a run that OpenCode ended with `taskkill /F` the window often stayed hidden ([`2b20ce6`](https://github.com/countzero/ai_opencode/commit/2b20ce6))
+
 ## [2.3.2] - 2026-11-10
 
 ### Fixed
@@ -73,6 +79,7 @@ _This version runs on OpenCode 2.1 only. Follow README.md → *Install the Whole
 - Add `tui-plugins/agent-refresh/`, which refreshes the agent list after a plugin reload without a restart ([`f774594`](https://github.com/countzero/ai_opencode/commit/f774594))
 - Detect Strata servers in `plugins/llama-limits.js` with their loaded model's context, image input and reasoning variants, and add the `strata@Laptop-Finn` provider ([`eb4f26d`](https://github.com/countzero/ai_opencode/commit/eb4f26d))
 
+[2.4.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.4.0
 [2.3.2]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.2
 [2.3.1]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.1
 [2.3.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.0
