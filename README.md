@@ -125,7 +125,7 @@ $env:CHROME_SLOT = '3'; opencode
 > The preference is honored only while the slot is free; a taken slot falls back to the lowest free one. A slot is released when its window ends, however it ends. An OpenCode started without the launcher, from `cmd` or inside an agent shell, gets no slot of its own.
 
 > [!NOTE]
-> On Windows a slot's Chromium can start with its window hidden, mostly after a previous run that OpenCode ended with `taskkill /F`. [`plugins/show-chromium.js`](./plugins/show-chromium.js) shows it, without taking the focus, after a session's first `chrome-devtools` call and after every `new_page`.
+> On Windows a slot's Chromium can start with its window hidden, mostly after a previous run that OpenCode ended with `taskkill /F`. [`plugins/show-chromium.js`](./plugins/show-chromium.js) shows it, restores it when minimized and moves it onto the primary screen when it sits off every screen, without taking the focus. It does so when a `chrome-devtools` call finds a browser it has not shown yet, the first or a relaunched one, and after every `new_page`.
 
 The mechanics are the header comments of [`scripts/opencode.ps1`](./scripts/opencode.ps1) and [`tui-plugins/slot-title/`](./tui-plugins/slot-title/).
 
