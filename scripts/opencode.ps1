@@ -25,6 +25,12 @@
 # a higher config-content layer that points build and plan at it; unset, the pins in
 # opencode.json decide. An OPENCODE_CONFIG_CONTENT already in the environment wins.
 #
+# opencode-claude-auth reports a pinned Claude Code version, and Anthropic refuses newer
+# models to versions it deems too old (Fable 5.2 needs 2.1.290, the plugin's 3.0.0 sends
+# 2.1.280). ANTHROPIC_CLI_VERSION overrides it; bump $claudeCliVersion when the error comes
+# back. A literal, not `claude --version`, which would slow every launch. An
+# ANTHROPIC_CLI_VERSION already in the environment wins.
+#
 # Install: in the PowerShell profile,
 #
 #   function opencode { & "$HOME\.config\opencode\scripts\opencode.ps1" @args }
@@ -33,6 +39,8 @@
 $slotCeiling = 1000
 
 $executable = Join-Path $env:APPDATA 'npm\opencode.cmd'
+
+$claudeCliVersion = '2.1.322'
 
 $launchModelConfig = @'
 {
@@ -46,6 +54,7 @@ $launchModelConfig = @'
 # The profile function runs this in the caller's session, whose environment must survive.
 $previous = $env:CHROME_SLOT
 $previousContent = $env:OPENCODE_CONFIG_CONTENT
+$previousCliVersion = $env:ANTHROPIC_CLI_VERSION
 $pipe = $null
 $exitCode = 1
 
@@ -84,6 +93,10 @@ try {
         $env:OPENCODE_CONFIG_CONTENT = $launchModelConfig
     }
 
+    if (-not $env:ANTHROPIC_CLI_VERSION) {
+        $env:ANTHROPIC_CLI_VERSION = $claudeCliVersion
+    }
+
     & $executable @args
     $exitCode = $LASTEXITCODE
 } finally {
@@ -96,6 +109,12 @@ try {
         $env:OPENCODE_CONFIG_CONTENT = $previousContent
     } else {
         Remove-Item Env:OPENCODE_CONFIG_CONTENT -ErrorAction Ignore
+    }
+
+    if ($null -ne $previousCliVersion) {
+        $env:ANTHROPIC_CLI_VERSION = $previousCliVersion
+    } else {
+        Remove-Item Env:ANTHROPIC_CLI_VERSION -ErrorAction Ignore
     }
 
     if ($null -eq $previous) {
