@@ -12,6 +12,7 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | `plugins/llama-limits.js`       | Fills llama-server and Strata/Basalt providers      | any     |
 | `plugins/background-guard.js`   | Delegates research to capped background subagents   | any     |
 | `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
+| `plugins/show-chromium.js`      | Shows a slot's Chromium window that started hidden  | Windows |
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
 | `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
 | `tui-plugins/agent-refresh/`    | Refreshes the agent list after a plugin reload      | any     |
@@ -122,6 +123,9 @@ $env:CHROME_SLOT = '3'; opencode
 
 > [!NOTE]
 > The preference is honored only while the slot is free; a taken slot falls back to the lowest free one. A slot is released when its window ends, however it ends. An OpenCode started without the launcher, from `cmd` or inside an agent shell, gets no slot of its own.
+
+> [!NOTE]
+> On Windows a slot's Chromium can start with its window hidden, mostly after a previous run that OpenCode ended with `taskkill /F`. [`plugins/show-chromium.js`](./plugins/show-chromium.js) shows it, without taking the focus, after a session's first `chrome-devtools` call and after every `new_page`.
 
 The mechanics are the header comments of [`scripts/opencode.ps1`](./scripts/opencode.ps1) and [`tui-plugins/slot-title/`](./tui-plugins/slot-title/).
 
