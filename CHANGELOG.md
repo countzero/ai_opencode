@@ -3,6 +3,12 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-11-10
+
+### Fixed
+
+- Make Claude Fable 5.2 usable by reporting Claude Code 2.1.322 through `ANTHROPIC_CLI_VERSION` in `scripts/opencode.ps1`: `opencode-claude-auth` 3.0.0 sends 2.1.280, and Anthropic requires 2.1.290 ([`37257a6`](https://github.com/countzero/ai_opencode/commit/37257a6))
+
 ## [2.3.1] - 2026-11-07
 
 ### Fixed
@@ -67,6 +73,7 @@ _This version runs on OpenCode 2.1 only. Follow README.md → *Install the Whole
 - Add `tui-plugins/agent-refresh/`, which refreshes the agent list after a plugin reload without a restart ([`f774594`](https://github.com/countzero/ai_opencode/commit/f774594))
 - Detect Strata servers in `plugins/llama-limits.js` with their loaded model's context, image input and reasoning variants, and add the `strata@Laptop-Finn` provider ([`eb4f26d`](https://github.com/countzero/ai_opencode/commit/eb4f26d))
 
+[2.3.2]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.2
 [2.3.1]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.1
 [2.3.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.3.0
 [2.2.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.2.0
