@@ -54,9 +54,9 @@ git clone https://github.com/countzero/ai_opencode.git "$HOME\.config\opencode"
 
 Secrets never enter the repository. `opencode.json` reads them from files under `~/.secrets` via `{file:…}`:
 
-| File                         | Used by                                      |
-| ---------------------------- | -------------------------------------------- |
-| `~/.secrets/windows-mcp-key` | Bearer token of the `windows-mcp` MCP server |
+| File                         | Used by                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `~/.secrets/windows-mcp-key` | Bearer token of the `windows-mcp` and `windows-mcp-evaluation` MCP servers |
 
 Create each file with the value as its only content:
 
@@ -65,7 +65,7 @@ New-Item -ItemType Directory -Force "$HOME\.secrets" | Out-Null
 Set-Content -NoNewline "$HOME\.secrets\windows-mcp-key" "<token>"
 ```
 
-A missing file leaves its value empty and logs a warning; `windows-mcp` then fails to authenticate.
+A missing file leaves its value empty and logs a warning; `windows-mcp` and `windows-mcp-evaluation` then fail to authenticate.
 
 ### 4. Disable the service
 

@@ -92,6 +92,17 @@
                 }
             },
 
+            // The windows VM of vm_engine_evaluation (AI-118).
+            "windows-mcp-evaluation": {
+                "type": "remote",
+                "url": "http://10.0.0.62:8000/mcp",
+                "disabled": true,
+                "oauth": false,
+                "headers": {
+                    "Authorization": "Bearer {file:~/.secrets/windows-mcp-key}"
+                }
+            },
+
             "atlassian": {
                 "type": "remote",
                 "url": "https://mcp.atlassian.com/v2/mcp?tools=all",
