@@ -4,9 +4,10 @@
 //
 // Whenever a chrome-devtools call finds a browser this plugin has not shown yet, the first or
 // one the MCP relaunched, and after every new_page, this runs scripts/show-chromium.ps1 for
-// the slot in CHROME_SLOT: it shows hidden windows, restores minimized ones and moves those
-// off every screen onto the primary one, all without taking the focus. Other calls cost one
-// process check. Windows only, and only in a window started through scripts/opencode.ps1.
+// the slot in CHROME_SLOT: it shows hidden windows at the bottom of the Z-order and moves those
+// off every screen onto the primary one, all without taking the focus, and leaves minimized
+// ones alone. Other calls cost one process check. Windows only, and only in a window started
+// through scripts/opencode.ps1.
 //
 // Install: drop this file into plugins/ and show-chromium.ps1 into scripts/ of an OpenCode
 // config root and restart.

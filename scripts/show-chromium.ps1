@@ -1,11 +1,13 @@
-# Shows, restores and moves onto the screen the browser windows of one slot's chrome-devtools
-# Chromium without activating them, for plugins/show-chromium.js. The caller was started
-# hidden, so its first ShowWindow would be turned into SW_HIDE; SetWindowPos and
-# ShowWindowAsync are not subject to that rule.
+# Shows the hidden browser windows of one slot's chrome-devtools Chromium at the bottom of the
+# Z-order and moves those off every screen onto the primary one, without activating them, for
+# plugins/show-chromium.js. The window stays reachable from the taskbar and never covers the
+# user's work. A minimized window is left minimized: restoring one makes Chromium take the
+# focus. The caller was started hidden, so its first ShowWindow would be turned into SW_HIDE;
+# SetWindowPos is not subject to that rule.
 #
-# Prints the browser's process ID once it has a window. Exits 0 when every window ends up
-# visible, restored and on a screen, 1 when the slot's browser or its window does not exist
-# yet, 2 when a window still is not.
+# Prints the browser's process ID once it has a window. Exits 0 when every window that is not
+# minimized ends up visible and on a screen, 1 when the slot's browser or its window does not
+# exist yet, 2 when a window still is not.
 #
 # Adapted from fertilizer_management's .claude/skills/chrome-devtools/scripts/show_window.ps1
 # at commit a9e66510.
@@ -29,7 +31,6 @@ public static class ShowChromium {
     [DllImport("user32.dll")] public static extern IntPtr MonitorFromPoint(long point, uint flags);
     [DllImport("user32.dll")] public static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int width, int height, uint flags);
-    [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
     public static List<IntPtr> WindowsOf(uint processId) {
         var found = new List<IntPtr>();
         EnumWindows((hwnd, lParam) => { uint owner; GetWindowThreadProcessId(hwnd, out owner); if (owner == processId) found.Add(hwnd); return true; }, IntPtr.Zero);
@@ -40,7 +41,7 @@ public static class ShowChromium {
 
 $N = [ShowChromium]
 $SWP_NOSIZE = 0x0001; $SWP_NOMOVE = 0x0002; $SWP_NOZORDER = 0x0004; $SWP_NOACTIVATE = 0x0010; $SWP_SHOWWINDOW = 0x0040
-$SW_SHOWNOACTIVATE = 4
+$HWND_BOTTOM = [IntPtr]1
 $MONITOR_DEFAULTTONULL = 0; $MONITOR_DEFAULTTOPRIMARY = 1
 
 $onScreen = { param($hwnd) $N::MonitorFromWindow($hwnd, $MONITOR_DEFAULTTONULL) -ne [IntPtr]::Zero }
@@ -67,20 +68,13 @@ $frames = @(foreach ($hwnd in $N::WindowsOf($browser.ProcessId)) {
 
 if ($frames.Count -eq 0) { exit 1 }
 
-$restored = $false
+# A minimized window reports its icon's place, off every screen, so it is left out entirely.
+$open = @($frames | Where-Object { -not $N::IsIconic($_) })
 
-foreach ($hwnd in $frames) {
-    [void]$N::SetWindowPos($hwnd, [IntPtr]::Zero, 0, 0, 0, 0,
-        $SWP_NOSIZE -bor $SWP_NOMOVE -bor $SWP_NOZORDER -bor $SWP_NOACTIVATE -bor $SWP_SHOWWINDOW)
-
-    if ($N::IsIconic($hwnd)) {
-        [void]$N::ShowWindowAsync($hwnd, $SW_SHOWNOACTIVATE)
-        $restored = $true
-    }
+foreach ($hwnd in $open | Where-Object { -not $N::IsWindowVisible($_) }) {
+    [void]$N::SetWindowPos($hwnd, $HWND_BOTTOM, 0, 0, 0, 0,
+        $SWP_NOSIZE -bor $SWP_NOMOVE -bor $SWP_NOACTIVATE -bor $SWP_SHOWWINDOW)
 }
-
-# The restore is asynchronous, and a minimized window reports its icon's place until it lands.
-if ($restored) { Start-Sleep -Milliseconds 300 }
 
 $work = (& {
     $info = New-Object ShowChromium+MonitorInfo
@@ -89,7 +83,7 @@ $work = (& {
     $info
 }).Work
 
-foreach ($hwnd in $frames | Where-Object { -not (& $onScreen $_) }) {
+foreach ($hwnd in $open | Where-Object { -not (& $onScreen $_) }) {
     $rect = New-Object ShowChromium+Rect
     [void]$N::GetWindowRect($hwnd, [ref]$rect)
     $width = [Math]::Min($rect.Right - $rect.Left, $work.Right - $work.Left)
@@ -99,4 +93,4 @@ foreach ($hwnd in $frames | Where-Object { -not (& $onScreen $_) }) {
 
 $browser.ProcessId
 
-if ($frames | Where-Object { -not $N::IsWindowVisible($_) -or $N::IsIconic($_) -or -not (& $onScreen $_) }) { exit 2 }
+if ($open | Where-Object { -not $N::IsWindowVisible($_) -or -not (& $onScreen $_) }) { exit 2 }
