@@ -3,6 +3,12 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-11-17
+
+### Fixed
+
+- Show a hidden `chrome-devtools` Chromium window at the bottom of the Z-order and leave a minimized one alone, in `scripts/show-chromium.ps1`: restoring a minimized window made Chromium take the focus, and a window shown on top covered the user's work ([`c8f8773`](https://github.com/countzero/ai_opencode/commit/c8f8773))
+
 ## [2.5.0] - 2026-11-17
 
 ### Added
@@ -101,6 +107,7 @@ _This version runs on OpenCode 2.1 only. Follow README.md → *Install the Whole
 - Add `tui-plugins/agent-refresh/`, which refreshes the agent list after a plugin reload without a restart ([`f774594`](https://github.com/countzero/ai_opencode/commit/f774594))
 - Detect Strata servers in `plugins/llama-limits.js` with their loaded model's context, image input and reasoning variants, and add the `strata@Laptop-Finn` provider ([`eb4f26d`](https://github.com/countzero/ai_opencode/commit/eb4f26d))
 
+[2.5.1]: https://github.com/countzero/ai_opencode/releases/tag/v2.5.1
 [2.5.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.5.0
 [2.4.2]: https://github.com/countzero/ai_opencode/releases/tag/v2.4.2
 [2.4.1]: https://github.com/countzero/ai_opencode/releases/tag/v2.4.1
