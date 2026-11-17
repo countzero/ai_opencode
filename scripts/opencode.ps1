@@ -15,9 +15,11 @@
 # When every slot is taken, OpenCode still starts, with a warning and without CHROME_SLOT;
 # {env:CHROME_SLOT} then resolves empty, so the MCP profile is the shared opencode-profile-.
 #
-# OpenCode runs through npm's opencode.cmd by full path: a bare `opencode` would hit the
-# profile function that calls this script and recurse, and the opencode.ps1 shim ends with
-# `exit`, which would skip the cleanup below.
+# OpenCode runs as the opencode.exe that npm's shims point at, by full path: a bare
+# `opencode` would hit the profile function that calls this script and recurse, the
+# opencode.ps1 shim ends with `exit`, which would skip the cleanup below, and the
+# opencode.cmd shim runs in cmd.exe, which cannot start in a UNC path such as
+# \\server\share and falls back to C:\Windows, so OpenCode opened there instead.
 #
 # A launch model comes through the same environment: the v2 TUI has no --model flag, and an
 # agent's model outranks the root "model", so changing "model" alone would not reach it.
@@ -38,7 +40,7 @@
 # Bounds the scan; no machine runs this many windows.
 $slotCeiling = 1000
 
-$executable = Join-Path $env:APPDATA 'npm\opencode.cmd'
+$executable = Join-Path $env:APPDATA 'npm\node_modules\@opencode\cli\bin\opencode.exe'
 
 $claudeCliVersion = '2.1.322'
 
