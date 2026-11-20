@@ -13,9 +13,11 @@ My global configuration for [OpenCode](https://opencode.ai) on Windows, publishe
 | `plugins/background-guard.js`   | Delegates research to capped background subagents   | any     |
 | `plugins/local-only-mail.js`    | Keeps Thunderbird mail on local models              | any     |
 | `plugins/show-chromium.js`      | Shows a slot's Chromium window that started hidden  | Windows |
+| `plugins/retry-heal.js`         | Heals Anthropic rate limits and network outages     | any     |
 | `scripts/opencode.ps1`          | Gives every OpenCode window its own Chrome profile  | Windows |
 | `tui-plugins/slot-title/`       | Shows the Chrome slot in the terminal title         | Windows |
 | `tui-plugins/agent-refresh/`    | Refreshes the agent list after a plugin reload      | any     |
+| `tui-plugins/retry-heal/`       | Shows held retries in the title and the session     | any     |
 | `.opencode/skills/plan-review/` | Second-pass design review of a plan                 | any     |
 | `.opencode/skills/trim-prose/`  | Tightens the comments and docs a branch changes     | bash    |
 | `opencode.json`                 | Models, agents, permissions, MCP servers, providers | Windows |
@@ -181,6 +183,19 @@ The agent can start a subagent in the background and keep talking; its result ar
 
 > [!NOTE]
 > Browser work stays in the foreground: one OpenCode window has one Chrome profile, and parallel browser tasks would collide on it.
+
+### Rate limits and outages
+
+OpenCode gives every model call 10 retries; then the turn fails and the agent waits for a message, however soon the provider would answer again. For the `anthropic` provider, [`plugins/retry-heal.js`](./plugins/retry-heal.js) changes that:
+
+* The first 5 retries of a rate limit or server error wait 90 s, whatever the provider's `retry-after` asks: [switch_claude_account](https://github.com/countzero/switch_claude_account)'s `sca monitor` rotates to a free account within a minute. Network errors keep OpenCode's own 2–30 s schedule.
+* After that, the retry is held instead of spent. Every 90 s one probe for all held sessions replays a held request with a single output token; a success, sca switching accounts, the `retry-after` time passing or a new message releases it. A network hold waits until `api.anthropic.com` answers.
+* A turn that fails anyway gets a "continue" once the provider answers again, up to 5 times in a row. A subagent's parent is told not to relaunch the held child.
+
+[`tui-plugins/retry-heal`](./tui-plugins/retry-heal/tui.tsx) shows this, since OpenCode's own retry line disappears during a hold: the window title reads `[1] OC | ↻ #3 in 89s | <title>` (`×` for the network), and a line above the prompt names every held session of the shown family. Esc ends a hold like any turn.
+
+> [!NOTE]
+> A successful probe runs the held request once with one output token; a refused one is not processed. The hold reads `~/.claude/.credentials.json` and `.sca-state.json` (under `CLAUDE_CONFIG_DIR` when set) and never refreshes a token.
 
 ### Change the configuration
 

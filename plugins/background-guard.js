@@ -46,8 +46,10 @@ const allowedAgents = new Set([
 // A call whose execute.after never fires would hold a slot forever.
 const pendingTtlMs = 60_000;
 
-// A child whose end event is missed (subscription dropped) would hold its slot forever.
-const runningTtlMs = 60 * 60_000;
+// A child whose end event is missed (subscription dropped) would hold its slot forever. Six
+// hours, because plugins/retry-heal.js can hold a rate-limited child that long, and a slot
+// freed earlier would let the parent launch past the cap.
+const runningTtlMs = 6 * 60 * 60_000;
 
 const rules = [
     'Background guard (local plugin):',

@@ -15,6 +15,7 @@
 !tui-plugins/
 !tui-plugins/*/
 !tui-plugins/*/*.js
+!tui-plugins/*/*.tsx
 !scripts/
 !scripts/*.ps1
 !docs/
