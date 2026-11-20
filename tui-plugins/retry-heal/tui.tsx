@@ -1,14 +1,14 @@
 // Shows what plugins/retry-heal.js is doing, which OpenCode itself cannot while the plugin
 // holds a retry: its retry line appears only after the hook returns (#63813). The window
-// title gets a marker with a live countdown, "OC | ↻ #3 in 89s | <title>" for a rate limit
-// or server error and "OC | × #12 in 30s | <title>" for the network, and the session view a
-// line above the prompt for every session of the shown family that is held or waits to
-// continue. Both count down here, so the server writes nothing per second; it sends its
+// title gets a marker with a live countdown, "OC | ↻ 89s | <title>" for a rate limit or
+// server error and "OC | × 30s | <title>" for the network, and the session view a line
+// above the prompt, with the retry count, for every session of the shown family that is
+// held or waits to continue. Both count down here, so the server writes nothing per second; it sends its
 // state over the plugin's RPC event, and the `state` method fills in a TUI that starts
 // mid-hold.
 //
 // The marker goes after the "OC | " that OpenCode puts in front of the session title, so
-// tui-plugins/slot-title still prefixes the slot: "[1] OC | ↻ #3 in 89s | <title>".
+// tui-plugins/slot-title still prefixes the slot: "[1] OC | ↻ 89s | <title>".
 //
 // Install: name this directory in the cli.json of an OpenCode config root, after
 // slot-title, then restart:
@@ -74,7 +74,11 @@ const setup = context => {
 
     const seconds = status => Math.max(0, Math.ceil((status.until - now()) / 1000));
 
-    const marker = status => `${icons[status.kind] ?? icons.limit} #${status.count} in ${seconds(status)}s`;
+    const icon = status => icons[status.kind] ?? icons.limit;
+
+    const marker = status => `${icon(status)} #${status.count} in ${seconds(status)}s`;
+
+    const titleMarker = status => `${icon(status)} ${seconds(status)}s`;
 
     // Statuses of the family that sessionID belongs to, the most pressing first.
     const family = sessionID => {
@@ -124,8 +128,8 @@ const setup = context => {
 
         if (top && requested) {
             title = requested.startsWith(titlePrefix)
-                ? `${titlePrefix}${marker(top)} | ${requested.slice(titlePrefix.length)}`
-                : `${marker(top)} | ${requested}`;
+                ? `${titlePrefix}${titleMarker(top)} | ${requested.slice(titlePrefix.length)}`
+                : `${titleMarker(top)} | ${requested}`;
         }
 
         // While a marker shows, write every tick: slot-title repeats the last title it was
@@ -163,7 +167,7 @@ const setup = context => {
 
         return (
             <Show when={lines().length > 0}>
-                <box paddingLeft={3} flexDirection="column">
+                <box paddingLeft={3} paddingBottom={1} flexDirection="column">
                     <For each={lines()}>
                         {status => (
                             <text fg={color}>

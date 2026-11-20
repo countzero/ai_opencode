@@ -192,7 +192,7 @@ OpenCode gives every model call 10 retries; then the turn fails and the agent wa
 * After that, the retry is held instead of spent. Every 90 s one probe for all held sessions replays a held request with a single output token; a success, sca switching accounts, the `retry-after` time passing or a new message releases it. A network hold waits until `api.anthropic.com` answers.
 * A turn that fails anyway gets a "continue" once the provider answers again, up to 5 times in a row. A subagent's parent is told not to relaunch the held child.
 
-[`tui-plugins/retry-heal`](./tui-plugins/retry-heal/tui.tsx) shows this, since OpenCode's own retry line disappears during a hold: the window title reads `[1] OC | ↻ #3 in 89s | <title>` (`×` for the network), and a line above the prompt names every held session of the shown family. Esc ends a hold like any turn.
+[`tui-plugins/retry-heal`](./tui-plugins/retry-heal/tui.tsx) shows this, since OpenCode's own retry line disappears during a hold: the window title reads `[1] OC | ↻ 89s | <title>` (`×` for the network), and a line above the prompt names every held session of the shown family with its retry count. Esc ends a hold like any turn.
 
 > [!NOTE]
 > A successful probe runs the held request once with one output token; a refused one is not processed. The hold reads `~/.claude/.credentials.json` and `.sca-state.json` (under `CLAUDE_CONFIG_DIR` when set) and never refreshes a token.
