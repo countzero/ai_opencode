@@ -3,6 +3,16 @@
 This changelog follows [Common Changelog](https://common-changelog.org) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-11-20
+
+### Added
+
+- Keep Anthropic sessions alive through rate limits and network outages with `plugins/retry-heal.js`: the first 5 retries of a rate limit wait 90 s whatever `retry-after` asks, later ones hold until a probe of the real request succeeds, `sca` switches accounts, `retry-after` passes or the user types, and a turn that fails anyway is continued; `tui-plugins/retry-heal/` shows the hold in the window title (`↻ #3 in 89s`, `×` for the network) and above the prompt ([`2ad4f0a`](https://github.com/countzero/ai_opencode/commit/2ad4f0a))
+
+### Changed
+
+- Keep a background subagent's slot in `plugins/background-guard.js` for 6 h instead of 1 h, so a child that `retry-heal` holds still counts against the cap ([`2ad4f0a`](https://github.com/countzero/ai_opencode/commit/2ad4f0a))
+
 ## [2.5.1] - 2026-11-17
 
 ### Fixed
@@ -107,6 +117,7 @@ _This version runs on OpenCode 2.1 only. Follow README.md → *Install the Whole
 - Add `tui-plugins/agent-refresh/`, which refreshes the agent list after a plugin reload without a restart ([`f774594`](https://github.com/countzero/ai_opencode/commit/f774594))
 - Detect Strata servers in `plugins/llama-limits.js` with their loaded model's context, image input and reasoning variants, and add the `strata@Laptop-Finn` provider ([`eb4f26d`](https://github.com/countzero/ai_opencode/commit/eb4f26d))
 
+[2.6.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.6.0
 [2.5.1]: https://github.com/countzero/ai_opencode/releases/tag/v2.5.1
 [2.5.0]: https://github.com/countzero/ai_opencode/releases/tag/v2.5.0
 [2.4.2]: https://github.com/countzero/ai_opencode/releases/tag/v2.4.2
